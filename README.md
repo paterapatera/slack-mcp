@@ -26,7 +26,7 @@ Slack ワークスペース内のメッセージを検索する MCP (Model Conte
 ### 1. リポジトリのクローン
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/paterapatera/slack-mcp.git
 cd slack-mcp
 ```
 
