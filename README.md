@@ -141,6 +141,7 @@ bun test
 ```
 
 全80テストが実行され、以下のカバレッジが含まれます：
+
 - Config Service
 - Slack API Client
 - Search Service
@@ -208,10 +209,12 @@ slack-mcp/
 Slack ワークスペース内のメッセージを検索します。
 
 **パラメータ**:
+
 - `query` (string, 必須): 検索クエリ
 - `limit` (number, オプション): 検索結果の最大件数
 
 **戻り値**:
+
 ```json
 {
   "messages": [
@@ -231,11 +234,11 @@ Slack ワークスペース内のメッセージを検索します。
 
 ## 環境変数
 
-| 変数名 | 必須 | 説明 |
-|--------|------|------|
-| `SLACK_USER_TOKEN` | ✅ | Slack User Token (`xoxb-` または `xoxp-` で始まる) |
-| `SLACK_TEAM_ID` | ❌ | チーム/ワークスペース ID |
-| `SLACK_CHANNEL_IDS` | ❌ | 検索対象チャンネル ID（カンマ区切り） |
+| 変数名              | 必須 | 説明                                               |
+| ------------------- | ---- | -------------------------------------------------- |
+| `SLACK_USER_TOKEN`  | ✅   | Slack User Token (`xoxb-` または `xoxp-` で始まる) |
+| `SLACK_TEAM_ID`     | ❌   | チーム/ワークスペース ID                           |
+| `SLACK_CHANNEL_IDS` | ❌   | 検索対象チャンネル ID（カンマ区切り）              |
 
 ## トラブルシューティング
 

@@ -1,5 +1,5 @@
-import { SlackAPIClient, SlackSearchOptions, SlackSearchResponse } from "./slack-api-client";
-import { LoggingService } from "./logging-service.js";
+import { SlackAPIClient, SlackSearchOptions, SlackSearchResponse } from './slack-api-client'
+import { LoggingService } from './logging-service.js'
 
 /**
  * 検索オプション
@@ -7,13 +7,13 @@ import { LoggingService } from "./logging-service.js";
  */
 export interface SearchOptions {
   /** 検索クエリ */
-  query: string;
+  query: string
   /** チャンネルIDの配列（オプション） */
-  channelIds?: string[];
+  channelIds?: string[]
   /** 検索結果の最大件数（オプション） */
-  maxResultCount?: number;
+  maxResultCount?: number
   /** チームID（オプション） */
-  teamId?: string;
+  teamId?: string
 }
 
 /**
@@ -22,21 +22,21 @@ export interface SearchOptions {
  */
 export interface Message {
   /** メッセージテキスト */
-  text: string;
+  text: string
   /** タイムスタンプ（ISO 8601形式） */
-  timestamp: string;
+  timestamp: string
   /** チャンネルID */
-  channelId: string;
+  channelId: string
   /** チャンネル名（オプション） */
-  channelName?: string;
+  channelName?: string
   /** ユーザーID */
-  userId: string;
+  userId: string
   /** ユーザー名（オプション） */
-  userName?: string;
+  userName?: string
   /** スレッドタイムスタンプ（オプション） */
-  threadTs?: string;
+  threadTs?: string
   /** 検索関連度スコア（オプション） */
-  score?: number;
+  score?: number
 }
 
 /**
@@ -45,11 +45,11 @@ export interface Message {
  */
 export interface SearchResult {
   /** 検索結果のメッセージ配列 */
-  messages: Message[];
+  messages: Message[]
   /** 検索結果の総件数 */
-  totalResultCount: number;
+  totalResultCount: number
   /** さらに結果があるかどうか */
-  hasMoreResults: boolean;
+  hasMoreResults: boolean
 }
 
 /**
@@ -61,15 +61,15 @@ export class SearchService {
    * JavaScript の Date コンストラクタはミリ秒単位を期待するため、
    * Unix タイムスタンプ（秒単位）をミリ秒に変換する際に使用
    */
-  private static readonly MILLISECONDS_PER_SECOND = 1000;
+  private static readonly MILLISECONDS_PER_SECOND = 1000
   /** メッセージのデフォルトスコア値
    * ソート時にスコアが undefined の場合に使用
    */
-  private static readonly DEFAULT_MESSAGE_SCORE = 0;
+  private static readonly DEFAULT_MESSAGE_SCORE = 0
   /** Slack API エラーコード: チャンネルが見つからない（channel_not_found） */
-  private static readonly ERROR_CODE_CHANNEL_NOT_FOUND = "channel_not_found";
+  private static readonly ERROR_CODE_CHANNEL_NOT_FOUND = 'channel_not_found'
   /** Slack API エラーコード: 無効なチャンネル（invalid_channel） */
-  private static readonly ERROR_CODE_INVALID_CHANNEL = "invalid_channel";
+  private static readonly ERROR_CODE_INVALID_CHANNEL = 'invalid_channel'
 
   constructor(
     /** Slack API クライアント */
@@ -85,14 +85,14 @@ export class SearchService {
    */
   private static timestampToISO8601(slackTimestamp: string): string {
     // タイムスタンプのパース試行
-    const timestampInSeconds = this.tryParseSlackTimestamp(slackTimestamp);
+    const timestampInSeconds = this.tryParseSlackTimestamp(slackTimestamp)
     if (timestampInSeconds === null) {
-      return "";
+      return ''
     }
 
     // JavaScript の Date コンストラクタはミリ秒単位を期待するため、
     // 秒単位のタイムスタンプをミリ秒に変換
-    return new Date(timestampInSeconds * SearchService.MILLISECONDS_PER_SECOND).toISOString();
+    return new Date(timestampInSeconds * SearchService.MILLISECONDS_PER_SECOND).toISOString()
   }
 
   /**
@@ -102,19 +102,19 @@ export class SearchService {
    */
   private static tryParseSlackTimestamp(slackTimestamp: string): number | null {
     // 空の文字列は null を返す
-    if (!slackTimestamp || slackTimestamp.trim() === "") {
-      return null;
+    if (!slackTimestamp || slackTimestamp.trim() === '') {
+      return null
     }
 
     // Slack タイムスタンプは Unix タイムスタンプ（秒単位、小数点以下含む）
-    const timestampInSeconds = parseFloat(slackTimestamp);
+    const timestampInSeconds = parseFloat(slackTimestamp)
 
     // パース失敗の場合（NaN の場合）、null を返す
     if (isNaN(timestampInSeconds)) {
-      return null;
+      return null
     }
 
-    return timestampInSeconds;
+    return timestampInSeconds
   }
 
   /**
@@ -129,24 +129,21 @@ export class SearchService {
     const channelNames = await Promise.all(
       channelIds.map(async (channelId) => {
         try {
-          return await this.slackClient.channelName(channelId);
+          return await this.slackClient.channelName(channelId)
         } catch (error: unknown) {
           // catch ブロックで捕捉されるエラーは unknown 型
           // コンストラクタで loggingService が未指定の場合でも
           // 新しい LoggingService インスタンスが設定されるため、
           // ここでは常に非nullであることが保証されている
           // 非nullアサーション演算子を使用して TypeScript の型チェックを回避
-          this.loggingService!.logError(
-            error,
-            `チャンネル名の取得に失敗しました: ${channelId}`
-          );
+          this.loggingService!.logError(error, `チャンネル名の取得に失敗しました: ${channelId}`)
           throw new Error(
             `エラー: チャンネルID "${channelId}" のチャンネル名を取得できませんでした。\nチャンネルIDが正しいか、アクセス権限があるか確認してください。`
-          );
+          )
         }
       })
-    );
-    return channelNames;
+    )
+    return channelNames
   }
 
   /**
@@ -154,7 +151,7 @@ export class SearchService {
    * Slack API の search.messages では in: の後にチャンネル名が必要
    */
   private static slackSearchQueryWithChannel(baseQuery: string, channelName: string): string {
-    return `${baseQuery} in:${channelName}`;
+    return `${baseQuery} in:${channelName}`
   }
 
   /**
@@ -162,13 +159,13 @@ export class SearchService {
    * @param options 検索オプション
    * @returns 検索結果
    * @throws {Error} 検索クエリが空の場合
-   * 
+   *
    * @example
    * // 全チャンネルで検索
    * const result = await searchService.searchMessages({
    *   query: "test query"
    * });
-   * 
+   *
    * @example
    * // 特定のチャンネルで検索（最大10件）
    * const result = await searchService.searchMessages({
@@ -179,51 +176,45 @@ export class SearchService {
    * });
    */
   async searchMessages(options: SearchOptions): Promise<SearchResult> {
-    if (!options.query || options.query.trim() === "") {
-      throw new Error(
-        "エラー: 検索クエリが空です。\n検索クエリを指定してください。"
-      );
+    if (!options.query || options.query.trim() === '') {
+      throw new Error('エラー: 検索クエリが空です。\n検索クエリを指定してください。')
     }
 
     if (options.channelIds) {
-      const invalidChannelIds = options.channelIds.filter(
-        (id) => !id || id.trim() === ""
-      );
+      const invalidChannelIds = options.channelIds.filter((id) => !id || id.trim() === '')
       if (invalidChannelIds.length > 0) {
         const error = new Error(
-          `エラー: 無効なチャンネルIDが指定されました。\n有効なチャンネルIDを指定してください。\n無効なチャンネルID: ${invalidChannelIds.join(", ")}`
-        );
+          `エラー: 無効なチャンネルIDが指定されました。\n有効なチャンネルIDを指定してください。\n無効なチャンネルID: ${invalidChannelIds.join(', ')}`
+        )
         // コンストラクタで loggingService が未指定の場合でも
         // 新しい LoggingService インスタンスが設定されるため、非nullアサーション演算子を使用
         this.loggingService!.logError(
           error,
-          `無効なチャンネルIDが検出されました: ${invalidChannelIds.join(", ")}`
-        );
-        throw error;
+          `無効なチャンネルIDが検出されました: ${invalidChannelIds.join(', ')}`
+        )
+        throw error
       }
     }
 
-    const baseQuery = options.query.trim();
+    const baseQuery = options.query.trim()
 
     // チャンネルIDが指定されていない場合、全チャンネルで検索
     if (!options.channelIds || options.channelIds.length === 0) {
-      return await this.searchInChannels(baseQuery, [], options);
+      return await this.searchInChannels(baseQuery, [], options)
     }
 
-    const validChannelIds = options.channelIds.filter(
-      (id) => id && id.trim() !== ""
-    );
+    const validChannelIds = options.channelIds.filter((id) => id && id.trim() !== '')
 
     if (validChannelIds.length === 0) {
-      return await this.searchInChannels(baseQuery, [], options);
+      return await this.searchInChannels(baseQuery, [], options)
     }
 
-    const channelNames = await this.channelNames(validChannelIds);
+    const channelNames = await this.channelNames(validChannelIds)
 
     // 各チャンネルで個別に検索して結果をマージ
     // Slack API の search.messages は OR 演算子をサポートしていないため、
     // 各チャンネルに対して個別に検索を実行する必要がある
-    return await this.searchInChannels(baseQuery, channelNames, options);
+    return await this.searchInChannels(baseQuery, channelNames, options)
   }
 
   /**
@@ -241,11 +232,11 @@ export class SearchService {
     options: SearchOptions
   ): Promise<SearchResult> {
     if (channelNames.length === 0) {
-      return await this.searchSingleChannel(baseQuery, options, this.slackClient);
+      return await this.searchSingleChannel(baseQuery, options, this.slackClient)
     }
 
-    const responses = await this.searchMultipleChannels(baseQuery, channelNames, options);
-    return this.mergeAndBuildResult(responses, baseQuery, options);
+    const responses = await this.searchMultipleChannels(baseQuery, channelNames, options)
+    return this.mergeAndBuildResult(responses, baseQuery, options)
   }
 
   /**
@@ -261,20 +252,17 @@ export class SearchService {
         query: SearchService.slackSearchQueryWithChannel(baseQuery, channelName),
         maxResultCount: options.maxResultCount,
         teamId: options.teamId,
-      };
+      }
 
       try {
-        return await this.slackClient.searchMessages(slackOptions);
+        return await this.slackClient.searchMessages(slackOptions)
       } catch (error: unknown) {
-        this.loggingService!.logError(
-          error,
-          `チャンネル "${channelName}" での検索に失敗しました`
-        );
-        return null;
+        this.loggingService!.logError(error, `チャンネル "${channelName}" での検索に失敗しました`)
+        return null
       }
-    });
+    })
 
-    return await Promise.all(searchPromises);
+    return await Promise.all(searchPromises)
   }
 
   /**
@@ -289,14 +277,14 @@ export class SearchService {
       query: baseQuery,
       maxResultCount: options.maxResultCount,
       teamId: options.teamId,
-    };
+    }
 
     try {
-      const searchResponse = await client.searchMessages(slackOptions);
-      return this.searchResponseToResult(searchResponse, options.query);
+      const searchResponse = await client.searchMessages(slackOptions)
+      return this.searchResponseToResult(searchResponse, options.query)
     } catch (error: unknown) {
-      this.loggingService!.logSearchRequestFailure(options.query, error);
-      throw error;
+      this.loggingService!.logSearchRequestFailure(options.query, error)
+      throw error
     }
   }
 
@@ -310,15 +298,15 @@ export class SearchService {
   ): SearchResult {
     const validResponses = responses.filter((response) =>
       SearchService.isValidSearchResponse(response)
-    );
+    )
 
-    const sortedMessages = this.sortMessagesByScore(validResponses);
-    const totalResultCount = this.calculateTotalResultCount(validResponses);
+    const sortedMessages = this.sortMessagesByScore(validResponses)
+    const totalResultCount = this.calculateTotalResultCount(validResponses)
     const hasMoreResults = this.calculateHasMoreResults(
       validResponses,
       sortedMessages.length,
       options.maxResultCount
-    );
+    )
 
     const searchResult = {
       messages: options.maxResultCount
@@ -326,14 +314,11 @@ export class SearchService {
         : sortedMessages,
       totalResultCount,
       hasMoreResults,
-    };
+    }
 
-    this.loggingService!.logSearchRequestSuccess(
-      originalQuery,
-      searchResult.messages.length
-    );
+    this.loggingService!.logSearchRequestSuccess(originalQuery, searchResult.messages.length)
 
-    return searchResult;
+    return searchResult
   }
 
   /**
@@ -343,16 +328,14 @@ export class SearchService {
    */
   private sortMessagesByScore(responses: SlackSearchResponse[]): Message[] {
     const allMessages = responses
-      .flatMap((response) =>
-        this.convertSlackMatchesToMessages(response.messages.matches)
-      )
+      .flatMap((response) => this.convertSlackMatchesToMessages(response.messages.matches))
       .sort((a, b) => {
-        const scoreA = a.score ?? SearchService.DEFAULT_MESSAGE_SCORE;
-        const scoreB = b.score ?? SearchService.DEFAULT_MESSAGE_SCORE;
-        return scoreB - scoreA;
-      });
+        const scoreA = a.score ?? SearchService.DEFAULT_MESSAGE_SCORE
+        const scoreB = b.score ?? SearchService.DEFAULT_MESSAGE_SCORE
+        return scoreB - scoreA
+      })
 
-    return allMessages;
+    return allMessages
   }
 
   /**
@@ -361,10 +344,7 @@ export class SearchService {
    * @returns 総件数
    */
   private calculateTotalResultCount(responses: SlackSearchResponse[]): number {
-    return responses.reduce(
-      (sum, response) => sum + response.messages.totalResultCount,
-      0
-    );
+    return responses.reduce((sum, response) => sum + response.messages.totalResultCount, 0)
   }
 
   /**
@@ -382,17 +362,17 @@ export class SearchService {
   ): boolean {
     const hasMoreResultsFromPaging = responses.some((response) =>
       this.hasMorePages(response.messages.paging)
-    );
+    )
 
     if (hasMoreResultsFromPaging) {
-      return true;
+      return true
     }
 
     if (maxResultCount === undefined) {
-      return false;
+      return false
     }
 
-    return allMessagesLength > maxResultCount;
+    return allMessagesLength > maxResultCount
   }
 
   /**
@@ -400,7 +380,7 @@ export class SearchService {
    * @param searchResponse Slack API レスポンス
    * @param originalQuery 元の検索クエリ
    * @returns 検索結果
-   * 
+   *
    * @example
    * // 成功レスポンスの変換
    * const result = searchResponseToResult({
@@ -410,7 +390,7 @@ export class SearchService {
    *     matches: [...]
    *   }
    * }, "test query");
-   * 
+   *
    * @example
    * // エラーレスポンスの処理
    * // エラーの場合は例外を throw する
@@ -424,22 +404,16 @@ export class SearchService {
   ): SearchResult {
     // エラーレスポンスの場合はエラー処理
     if (!searchResponse.isSuccess && searchResponse.error) {
-      this.handleSearchResponseError(searchResponse.error);
+      this.handleSearchResponseError(searchResponse.error)
     }
 
     // 成功レスポンスを内部形式に変換
-    const searchResult = this.convertSearchResponseToResult(
-      searchResponse,
-      originalQuery
-    );
+    const searchResult = this.convertSearchResponseToResult(searchResponse, originalQuery)
 
     // ログに検索成功を記録
-    this.loggingService!.logSearchRequestSuccess(
-      originalQuery,
-      searchResult.messages.length
-    );
+    this.loggingService!.logSearchRequestSuccess(originalQuery, searchResult.messages.length)
 
-    return searchResult;
+    return searchResult
   }
 
   /**
@@ -452,23 +426,21 @@ export class SearchService {
     if (this.isInvalidChannelError(error)) {
       const errorObj = new Error(
         `エラー: 指定されたチャンネルIDが無効です。\n有効なチャンネルIDを指定してください。\nエラー詳細: ${error}`
-      );
+      )
       // コンストラクタで loggingService が未指定の場合でも
       // 新しい LoggingService インスタンスが設定されるため、非nullアサーション演算子を使用
       this.loggingService!.logError(
         errorObj,
         `無効なチャンネルIDが検出されました。エラー: ${error}`
-      );
-      throw errorObj;
+      )
+      throw errorObj
     }
 
-    const errorObj = new Error(
-      `エラー: Slack API の検索に失敗しました。\n${error}`
-    );
+    const errorObj = new Error(`エラー: Slack API の検索に失敗しました。\n${error}`)
     // コンストラクタで loggingService が未指定の場合でも
     // 新しい LoggingService インスタンスが設定されるため、非nullアサーション演算子を使用
-    this.loggingService!.logError(errorObj, "Slack API の検索に失敗しました");
-    throw errorObj;
+    this.loggingService!.logError(errorObj, 'Slack API の検索に失敗しました')
+    throw errorObj
   }
 
   /**
@@ -480,9 +452,7 @@ export class SearchService {
   private convertSearchResponseToResult(searchResponse: any, originalQuery: string): SearchResult {
     // Slack API のレスポンス型が完全に定義されていないため、
     // any 型を使用して型チェックを回避
-    const messages = this.convertSlackMatchesToMessages(
-      searchResponse.messages.matches
-    );
+    const messages = this.convertSlackMatchesToMessages(searchResponse.messages.matches)
 
     const searchResult = {
       messages,
@@ -490,9 +460,9 @@ export class SearchService {
       // ページング情報から hasMoreResults を判定
       // 現在のページ番号が総ページ数より小さい場合、次のページが存在する
       hasMoreResults: this.hasMorePages(searchResponse.messages.paging),
-    };
+    }
 
-    return searchResult;
+    return searchResult
   }
 
   /**
@@ -509,7 +479,7 @@ export class SearchService {
       userId: match.user,
       userName: match.username,
       score: match.score,
-    }));
+    }))
   }
 
   /**
@@ -517,8 +487,10 @@ export class SearchService {
    * @param response 検索レスポンス
    * @returns 有効な検索レスポンスの場合 true
    */
-  private static isValidSearchResponse(response: SlackSearchResponse | null): response is SlackSearchResponse {
-    return response !== null && response?.isSuccess === true;
+  private static isValidSearchResponse(
+    response: SlackSearchResponse | null
+  ): response is SlackSearchResponse {
+    return response !== null && response?.isSuccess === true
   }
 
   /**
@@ -527,10 +499,7 @@ export class SearchService {
    * @returns 次のページが存在する場合 true
    */
   private hasMorePages(paging: any): boolean {
-    return (
-      paging !== undefined &&
-      paging.pageNumber < paging.totalPageCount
-    );
+    return paging !== undefined && paging.pageNumber < paging.totalPageCount
   }
 
   /**
@@ -542,6 +511,6 @@ export class SearchService {
     return (
       error.includes(SearchService.ERROR_CODE_CHANNEL_NOT_FOUND) ||
       error.includes(SearchService.ERROR_CODE_INVALID_CHANNEL)
-    );
+    )
   }
 }

@@ -5,16 +5,19 @@
 ## クイックスタート
 
 1. **環境変数を設定**:
+
    ```bash
    export SLACK_USER_TOKEN="xoxb-your-token-here"
    ```
 
 2. **ビルド**:
+
    ```bash
    bun run build
    ```
 
 3. **MCP Inspector を起動**:
+
    ```bash
    bun run inspector
    ```
@@ -79,6 +82,7 @@ bun run inspector
 ```
 
 このスクリプトは以下を実行します：
+
 - 環境変数の確認
 - ビルドファイルの確認（必要に応じてビルド）
 - MCP Inspector の起動

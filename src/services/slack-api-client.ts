@@ -1,6 +1,6 @@
-import { App } from "@slack/bolt";
-import { SearchMessagesResponse } from "@slack/web-api";
-import { LoggingService } from "./logging-service.js";
+import { App } from '@slack/bolt'
+import { SearchMessagesResponse } from '@slack/web-api'
+import { LoggingService } from './logging-service.js'
 
 /**
  * レート制限エラー
@@ -8,19 +8,19 @@ import { LoggingService } from "./logging-service.js";
  */
 class RateLimitError extends Error {
   /** 待機時間（ミリ秒） */
-  delayMs: number;
+  delayMs: number
 
   constructor(delayMs: number) {
-    super(`レート制限エラーが発生しました（待機: ${delayMs}ms）`);
-    this.delayMs = delayMs;
-    this.name = "RateLimitError";
+    super(`レート制限エラーが発生しました（待機: ${delayMs}ms）`)
+    this.delayMs = delayMs
+    this.name = 'RateLimitError'
   }
 
   /**
    * 通常の Error オブジェクトに変換する
    */
   toError(): Error {
-    return new Error(this.message);
+    return new Error(this.message)
   }
 }
 
@@ -30,11 +30,11 @@ class RateLimitError extends Error {
  */
 type SlackAPIResponse = SearchMessagesResponse & {
   headers?: {
-    [key: string]: string | string[] | undefined;
-    "retry-after"?: string;
-  };
-  statusCode?: number;
-};
+    [key: string]: string | string[] | undefined
+    'retry-after'?: string
+  }
+  statusCode?: number
+}
 
 /**
  * Slack 検索オプション
@@ -42,17 +42,17 @@ type SlackAPIResponse = SearchMessagesResponse & {
  */
 export interface SlackSearchOptions {
   /** 検索クエリ */
-  query: string;
+  query: string
   /** 検索結果の最大件数 */
-  maxResultCount?: number;
+  maxResultCount?: number
   /** ページ番号 */
-  pageNumber?: number;
+  pageNumber?: number
   /** ソート方法（"score": 関連度順、"timestamp": 時刻順） */
-  sort?: "score" | "timestamp";
+  sort?: 'score' | 'timestamp'
   /** ハイライト表示の有無 */
-  highlight?: boolean;
+  highlight?: boolean
   /** チームID */
-  teamId?: string;
+  teamId?: string
 }
 
 /**
@@ -61,26 +61,26 @@ export interface SlackSearchOptions {
  */
 export interface SlackMessage {
   /** メッセージタイプ */
-  type: string;
+  type: string
   /** チャンネル情報 */
   channel: {
     /** チャンネルID */
-    id: string;
+    id: string
     /** チャンネル名 */
-    name: string;
-  };
+    name: string
+  }
   /** ユーザーID */
-  user: string;
+  user: string
   /** ユーザー名（オプション） */
-  username?: string;
+  username?: string
   /** メッセージテキスト */
-  text: string;
+  text: string
   /** タイムスタンプ */
-  ts: string;
+  ts: string
   /** メッセージへのリンク */
-  permalink: string;
+  permalink: string
   /** 検索関連度スコア（オプション） */
-  score?: number;
+  score?: number
 }
 
 /**
@@ -89,29 +89,29 @@ export interface SlackMessage {
  */
 export interface SlackSearchResponse {
   /** 検索が成功したかどうか */
-  isSuccess: boolean;
+  isSuccess: boolean
   /** 検索クエリ */
-  query: string;
+  query: string
   /** メッセージ情報 */
   messages: {
     /** 検索結果の総件数 */
-    totalResultCount: number;
+    totalResultCount: number
     /** 検索結果のメッセージ配列 */
-    matches: SlackMessage[];
+    matches: SlackMessage[]
     /** ページング情報（オプション） */
     paging?: {
       /** 現在のページの結果数 */
-      count: number;
+      count: number
       /** 全検索結果数 */
-      totalResultCount: number;
+      totalResultCount: number
       /** 現在のページ番号 */
-      pageNumber: number;
+      pageNumber: number
       /** 総ページ数 */
-      totalPageCount: number;
-    };
-  };
+      totalPageCount: number
+    }
+  }
   /** エラーメッセージ（オプション） */
-  error?: string;
+  error?: string
 }
 
 /**
@@ -120,83 +120,83 @@ export interface SlackSearchResponse {
  */
 export class SlackAPIClient {
   /** @slack/bolt の App インスタンス */
-  private app: App | null = null;
+  private app: App | null = null
   /** 最大リトライ回数
    * Slack API のレート制限や一時的なネットワークエラーに対応するため、
    * 初回試行を含めて合計4回（初回 + リトライ3回）試行する
    * MAX_RETRIES（3回）は、API のレート制限ポリシーとユーザー体験のバランスを考慮して決定
    */
-  private static readonly MAX_RETRIES = 3;
+  private static readonly MAX_RETRIES = 3
   /** 基本待機時間（ミリ秒）
    * 指数バックオフの基本待機時間として1秒を使用
    * Slack API のレート制限ポリシーと、ユーザー体験への影響を考慮して決定
    * 短すぎるとレート制限に再び引っかかる可能性があり、
    * 長すぎるとユーザー体験が悪化するため、1秒を基本値として設定
    */
-  private static readonly BASE_DELAY_MS = 1000; // 1秒
+  private static readonly BASE_DELAY_MS = 1000 // 1秒
   /** Bot トークンのプレフィックス */
-  private static readonly BOT_TOKEN_PREFIX = "xoxb-";
+  private static readonly BOT_TOKEN_PREFIX = 'xoxb-'
   /** User トークンのプレフィックス */
-  private static readonly USER_TOKEN_PREFIX = "xoxp-";
+  private static readonly USER_TOKEN_PREFIX = 'xoxp-'
   /** ダミーの署名シークレット
    * MCP サーバーは stdio 経由で動作するため、HTTP リクエストを受け取らない
    * 実際には使用されないが、@slack/bolt の App 初期化に必要
    */
-  private static readonly DUMMY_SIGNING_SECRET = "dummy-signing-secret-for-mcp-server";
+  private static readonly DUMMY_SIGNING_SECRET = 'dummy-signing-secret-for-mcp-server'
   /** HTTPステータスコード: Too Many Requests（レート制限エラー） */
-  private static readonly HTTP_STATUS_TOO_MANY_REQUESTS = 429;
+  private static readonly HTTP_STATUS_TOO_MANY_REQUESTS = 429
   /** 秒からミリ秒への変換係数
    * retry-after ヘッダーは秒単位で返されるが、setTimeout はミリ秒単位を期待するため使用
    */
-  private static readonly MILLISECONDS_PER_SECOND = 1000;
+  private static readonly MILLISECONDS_PER_SECOND = 1000
   /** parseInt の基数（10進数） */
-  private static readonly DECIMAL_RADIX = 10;
+  private static readonly DECIMAL_RADIX = 10
   /** ページング情報のデフォルト値: カウント */
-  private static readonly DEFAULT_PAGING_COUNT = 0;
+  private static readonly DEFAULT_PAGING_COUNT = 0
   /** ページング情報のデフォルト値: 総件数 */
-  private static readonly DEFAULT_PAGING_TOTAL = 0;
+  private static readonly DEFAULT_PAGING_TOTAL = 0
   /** ページング情報のデフォルト値: ページ番号 */
-  private static readonly DEFAULT_PAGE_NUMBER = 1;
+  private static readonly DEFAULT_PAGE_NUMBER = 1
   /** ページング情報のデフォルト値: 総ページ数 */
-  private static readonly DEFAULT_TOTAL_PAGE_COUNT = 1;
+  private static readonly DEFAULT_TOTAL_PAGE_COUNT = 1
   /** 指数バックオフの底
    * 待機時間を段階的に増加させるために使用（2^attempt）
    * 一般的な指数バックオフの実装で広く使用されている値
    */
-  private static readonly EXPONENTIAL_BACKOFF_BASE = 2;
+  private static readonly EXPONENTIAL_BACKOFF_BASE = 2
   /** Slack API エラーコード: レート制限（ratelimited） */
-  private static readonly ERROR_CODE_RATELIMITED = "ratelimited";
+  private static readonly ERROR_CODE_RATELIMITED = 'ratelimited'
   /** Slack API エラーコード: レート制限（rate_limited） */
-  private static readonly ERROR_CODE_RATE_LIMITED = "rate_limited";
+  private static readonly ERROR_CODE_RATE_LIMITED = 'rate_limited'
   /** Slack API エラーコード: 認証無効（invalid_auth） */
-  private static readonly ERROR_CODE_INVALID_AUTH = "invalid_auth";
+  private static readonly ERROR_CODE_INVALID_AUTH = 'invalid_auth'
   /** Slack API エラーコード: トークン無効（invalid_token） */
-  private static readonly ERROR_CODE_INVALID_TOKEN = "invalid_token";
+  private static readonly ERROR_CODE_INVALID_TOKEN = 'invalid_token'
   /** Slack API エラーコード: アカウント非アクティブ（account_inactive） */
-  private static readonly ERROR_CODE_ACCOUNT_INACTIVE = "account_inactive";
+  private static readonly ERROR_CODE_ACCOUNT_INACTIVE = 'account_inactive'
   /** Slack API エラーコード: トークン取り消し（token_revoked） */
-  private static readonly ERROR_CODE_TOKEN_REVOKED = "token_revoked";
+  private static readonly ERROR_CODE_TOKEN_REVOKED = 'token_revoked'
   /** ネットワークエラーコード: 接続拒否（ECONNREFUSED） */
-  private static readonly ERROR_CODE_ECONNREFUSED = "ECONNREFUSED";
+  private static readonly ERROR_CODE_ECONNREFUSED = 'ECONNREFUSED'
   /** ネットワークエラーコード: タイムアウト（ETIMEDOUT） */
-  private static readonly ERROR_CODE_ETIMEDOUT = "ETIMEDOUT";
+  private static readonly ERROR_CODE_ETIMEDOUT = 'ETIMEDOUT'
   /** ネットワークエラーコード: ホスト名解決失敗（ENOTFOUND） */
-  private static readonly ERROR_CODE_ENOTFOUND = "ENOTFOUND";
+  private static readonly ERROR_CODE_ENOTFOUND = 'ENOTFOUND'
   /** ネットワークエラーコード: 接続リセット（ECONNRESET） */
-  private static readonly ERROR_CODE_ECONNRESET = "ECONNRESET";
+  private static readonly ERROR_CODE_ECONNRESET = 'ECONNRESET'
   /** エラーメッセージに含まれる可能性のある文字列: タイムアウト */
-  private static readonly ERROR_MESSAGE_TIMEOUT = "timeout";
+  private static readonly ERROR_MESSAGE_TIMEOUT = 'timeout'
   /** デフォルトエラーメッセージ */
-  private static readonly DEFAULT_ERROR_MESSAGE = "不明なエラー";
+  private static readonly DEFAULT_ERROR_MESSAGE = '不明なエラー'
   /** デフォルトメッセージタイプ */
-  private static readonly DEFAULT_MESSAGE_TYPE = "message";
+  private static readonly DEFAULT_MESSAGE_TYPE = 'message'
   /** HTTPヘッダー名: retry-after */
-  private static readonly HTTP_HEADER_RETRY_AFTER = "retry-after";
+  private static readonly HTTP_HEADER_RETRY_AFTER = 'retry-after'
   /** ログ記録サービス */
-  private readonly loggingService: LoggingService;
+  private readonly loggingService: LoggingService
 
   constructor(loggingService?: LoggingService) {
-    this.loggingService = loggingService ?? new LoggingService();
+    this.loggingService = loggingService ?? new LoggingService()
   }
 
   /**
@@ -207,15 +207,15 @@ export class SlackAPIClient {
   private static getErrorMessage(error: unknown): string {
     // Error インスタンスの場合は message プロパティを返す
     if (error instanceof Error) {
-      return error.message;
+      return error.message
     }
     // Error インスタンスではない場合、message プロパティを確認
-    const message = SlackAPIClient.extractMessageProperty(error);
+    const message = SlackAPIClient.extractMessageProperty(error)
     if (message !== undefined) {
-      return message;
+      return message
     }
     // message が取得できない場合は文字列に変換
-    return String(error ?? SlackAPIClient.DEFAULT_ERROR_MESSAGE);
+    return String(error ?? SlackAPIClient.DEFAULT_ERROR_MESSAGE)
   }
 
   /**
@@ -226,11 +226,11 @@ export class SlackAPIClient {
   private static extractMessageProperty(error: unknown): string | undefined {
     // error が object 型で、"message" プロパティを持つかを確認
     if (!SlackAPIClient.isErrorWithMessage(error)) {
-      return undefined;
+      return undefined
     }
-    const message = (error as { message?: unknown }).message;
+    const message = (error as { message?: unknown }).message
     // message が文字列型の場合のみ返す
-    return typeof message === "string" ? message : undefined;
+    return typeof message === 'string' ? message : undefined
   }
 
   /**
@@ -239,7 +239,7 @@ export class SlackAPIClient {
    * @returns message プロパティを持つ場合 true
    */
   private static isErrorWithMessage(error: unknown): boolean {
-    return error !== null && typeof error === "object" && "message" in error;
+    return error !== null && typeof error === 'object' && 'message' in error
   }
 
   /**
@@ -250,11 +250,11 @@ export class SlackAPIClient {
   private static getErrorStatusCode(error: unknown): number | undefined {
     // statusCode プロパティを持つかを確認
     if (!SlackAPIClient.isErrorWithStatusCode(error)) {
-      return undefined;
+      return undefined
     }
-    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    const statusCode = (error as { statusCode?: unknown }).statusCode
     // statusCode が数値型の場合のみ返す
-    return typeof statusCode === "number" ? statusCode : undefined;
+    return typeof statusCode === 'number' ? statusCode : undefined
   }
 
   /**
@@ -263,7 +263,7 @@ export class SlackAPIClient {
    * @returns statusCode プロパティを持つ場合 true
    */
   private static isErrorWithStatusCode(error: unknown): boolean {
-    return error !== null && typeof error === "object" && "statusCode" in error;
+    return error !== null && typeof error === 'object' && 'statusCode' in error
   }
 
   /**
@@ -274,11 +274,11 @@ export class SlackAPIClient {
   private static getErrorCode(error: unknown): string | undefined {
     // code プロパティを持つかを確認
     if (!SlackAPIClient.isErrorWithCode(error)) {
-      return undefined;
+      return undefined
     }
-    const code = (error as { code?: unknown }).code;
+    const code = (error as { code?: unknown }).code
     // code が文字列型の場合のみ返す
-    return typeof code === "string" ? code : undefined;
+    return typeof code === 'string' ? code : undefined
   }
 
   /**
@@ -287,7 +287,7 @@ export class SlackAPIClient {
    * @returns code プロパティを持つ場合 true
    */
   private static isErrorWithCode(error: unknown): boolean {
-    return error !== null && typeof error === "object" && "code" in error;
+    return error !== null && typeof error === 'object' && 'code' in error
   }
 
   /**
@@ -296,8 +296,8 @@ export class SlackAPIClient {
    * @throws {Error} トークンが無効な場合
    */
   initializeClient(token: string): void {
-    this.validateToken(token);
-    this.createSlackApp(token);
+    this.validateToken(token)
+    this.createSlackApp(token)
   }
 
   /**
@@ -307,17 +307,17 @@ export class SlackAPIClient {
    */
   private validateToken(token: string): void {
     // トークンが空でないかを確認
-    if (!token || token.trim() === "") {
+    if (!token || token.trim() === '') {
       throw new Error(
-        "エラー: Slack API クライアントの初期化に失敗しました。\nSLACK_USER_TOKEN が有効で、必要なスコープが付与されていることを確認してください。"
-      );
+        'エラー: Slack API クライアントの初期化に失敗しました。\nSLACK_USER_TOKEN が有効で、必要なスコープが付与されていることを確認してください。'
+      )
     }
 
     // トークンフォーマットが有効かを確認
     if (!this.isValidTokenFormat(token)) {
       throw new Error(
-        "エラー: Slack API クライアントの初期化に失敗しました。\nSLACK_USER_TOKEN が有効な形式（xoxb-... または xoxp-...）であることを確認してください。"
-      );
+        'エラー: Slack API クライアントの初期化に失敗しました。\nSLACK_USER_TOKEN が有効な形式（xoxb-... または xoxp-...）であることを確認してください。'
+      )
     }
   }
 
@@ -331,7 +331,7 @@ export class SlackAPIClient {
     return (
       token.startsWith(SlackAPIClient.BOT_TOKEN_PREFIX) ||
       token.startsWith(SlackAPIClient.USER_TOKEN_PREFIX)
-    );
+    )
   }
 
   /**
@@ -344,12 +344,12 @@ export class SlackAPIClient {
       this.app = new App({
         token: token,
         signingSecret: SlackAPIClient.DUMMY_SIGNING_SECRET,
-      });
+      })
     } catch (error: unknown) {
-      const errorMessage = SlackAPIClient.getErrorMessage(error);
+      const errorMessage = SlackAPIClient.getErrorMessage(error)
       throw new Error(
         `エラー: Slack API クライアントの初期化に失敗しました。\n${errorMessage}\nSLACK_USER_TOKEN が有効で、必要なスコープが付与されていることを確認してください。`
-      );
+      )
     }
   }
 
@@ -359,14 +359,14 @@ export class SlackAPIClient {
    * @param options 検索オプション
    * @returns 検索結果
    * @throws {Error} app が初期化されていない場合、または API 呼び出しが最終的に失敗した場合
-   * 
+   *
    * @example
    * // 基本的な検索
    * const result = await client.searchMessages({
    *   query: "test query",
    *   maxResultCount: 10
    * });
-   * 
+   *
    * @example
    * // ページング付き検索
    * const result = await client.searchMessages({
@@ -377,16 +377,14 @@ export class SlackAPIClient {
    *   teamId: "T1234567890"
    * });
    */
-  async searchMessages(
-    options: SlackSearchOptions
-  ): Promise<SlackSearchResponse> {
+  async searchMessages(options: SlackSearchOptions): Promise<SlackSearchResponse> {
     if (!this.app) {
       throw new Error(
-        "エラー: Slack API クライアントが初期化されていません。\ninitializeClient() を先に呼び出してください。"
-      );
+        'エラー: Slack API クライアントが初期化されていません。\ninitializeClient() を先に呼び出してください。'
+      )
     }
 
-    return await this.executeSearchWithRetry(options);
+    return await this.executeSearchWithRetry(options)
   }
 
   /**
@@ -396,25 +394,23 @@ export class SlackAPIClient {
    * @returns 検索結果
    * @throws {Error} API 呼び出しが最終的に失敗した場合
    */
-  private async executeSearchWithRetry(
-    options: SlackSearchOptions
-  ): Promise<SlackSearchResponse> {
+  private async executeSearchWithRetry(options: SlackSearchOptions): Promise<SlackSearchResponse> {
     // リトライループ: 初回試行（attempt=0）+ リトライ3回（attempt=1,2,3）= 合計4回試行
     // 合計4回の試行を実現するため、attempt <= MAX_RETRIES（3）とする
     for (let attempt = 0; attempt <= SlackAPIClient.MAX_RETRIES; attempt++) {
       try {
-        return await this.executeSearchOnce(options, attempt);
+        return await this.executeSearchOnce(options, attempt)
       } catch (error: unknown) {
         // リトライ可能なエラーかどうかを判定し、リトライ可能な場合は続行
-        const shouldRetry = await this.handleSearchError(error, attempt);
+        const shouldRetry = await this.handleSearchError(error, attempt)
         if (!shouldRetry) {
-          throw error;
+          throw error
         }
       }
     }
 
     // リトライ回数の上限に達しても成功しなかった場合、予期しないエラーを投げる
-    throw new Error("エラー: Slack API の呼び出しに失敗しました。");
+    throw new Error('エラー: Slack API の呼び出しに失敗しました。')
   }
 
   /**
@@ -431,20 +427,20 @@ export class SlackAPIClient {
     // @slack/bolt の search.messages() の戻り値型は SearchMessagesResponse だが、
     // 実際のレスポンスには headers や statusCode などのメタデータが含まれるため、
     // SlackAPIResponse 型（SearchMessagesResponse を拡張した型）に型アサーションする
-    const searchResult: SlackAPIResponse = await this.app!.client.search.messages({
+    const searchResult: SlackAPIResponse = (await this.app!.client.search.messages({
       query: options.query,
       count: options.maxResultCount,
       page: options.pageNumber,
       sort: options.sort,
       highlight: options.highlight,
       team_id: options.teamId,
-    }) as SlackAPIResponse;
+    })) as SlackAPIResponse
 
     // レスポンスのエラー判定と処理
-    this.handleSearchResponse(searchResult, attempt);
+    this.handleSearchResponse(searchResult, attempt)
 
     // Slack API レスポンスを内部形式に変換
-    return this.convertSearchResultToResponse(searchResult, options.query);
+    return this.convertSearchResultToResponse(searchResult, options.query)
   }
 
   /**
@@ -458,14 +454,14 @@ export class SlackAPIClient {
     originalQuery: string
   ): SlackSearchResponse {
     // メッセージオブジェクトを変換
-    const messagesData = this.convertMessagesData(searchResult.messages);
+    const messagesData = this.convertMessagesData(searchResult.messages)
 
     return {
       isSuccess: searchResult.ok ?? false,
       query: searchResult.query ?? originalQuery,
       messages: messagesData,
       error: searchResult.error,
-    };
+    }
   }
 
   /**
@@ -474,9 +470,14 @@ export class SlackAPIClient {
    * @returns 変換されたメッセージデータ
    */
   private convertMessagesData(messagesData: any): {
-    totalResultCount: number;
-    matches: SlackMessage[];
-    paging?: { count: number; totalResultCount: number; pageNumber: number; totalPageCount: number };
+    totalResultCount: number
+    matches: SlackMessage[]
+    paging?: {
+      count: number
+      totalResultCount: number
+      pageNumber: number
+      totalPageCount: number
+    }
   } {
     return {
       totalResultCount: messagesData?.total ?? 0,
@@ -484,7 +485,7 @@ export class SlackAPIClient {
       matches: this.convertSlackMatchesToMessages(messagesData?.matches),
       // Slack API のページング情報を内部形式に変換
       paging: this.convertPagingInfo(messagesData?.paging),
-    };
+    }
   }
 
   /**
@@ -499,13 +500,9 @@ export class SlackAPIClient {
       if (attempt >= SlackAPIClient.MAX_RETRIES) {
         const error = new Error(
           `エラー: Slack API のレート制限に達しました。リトライ回数の上限（${SlackAPIClient.MAX_RETRIES + 1}回）に達しました。`
-        );
-        this.loggingService.logRateLimitError(
-          error,
-          "Slack API 呼び出し",
-          attempt + 1
-        );
-        throw error;
+        )
+        this.loggingService.logRateLimitError(error, 'Slack API 呼び出し', attempt + 1)
+        throw error
       }
 
       // レート制限エラー時の待機時間を決定
@@ -514,33 +511,31 @@ export class SlackAPIClient {
       const delayMs = this.calculateRetryDelayMs(
         searchResult.headers?.[SlackAPIClient.HTTP_HEADER_RETRY_AFTER],
         attempt
-      );
+      )
       this.loggingService.logRateLimitError(
         new Error(
           `レート制限エラー検出。${delayMs}ms 待機後にリトライします（試行 ${attempt + 1}/${SlackAPIClient.MAX_RETRIES + 1}）`
         ),
-        "Slack API 呼び出し",
+        'Slack API 呼び出し',
         attempt + 1
-      );
+      )
       // 待機してリトライするため、エラーを投げて外側のループで処理
-      throw new RateLimitError(delayMs);
+      throw new RateLimitError(delayMs)
     }
 
     // 認証エラーの場合、リトライせずに即座にエラーを throw
     if (SlackAPIClient.isAuthenticationError(searchResult)) {
       const error = new Error(
         `エラー: Slack API の認証に失敗しました。\nトークンが有効で、必要なスコープが付与されていることを確認してください。\nエラー詳細: ${searchResult.error}`
-      );
-      this.loggingService.logAuthenticationError(error, "Slack API 認証");
-      throw error;
+      )
+      this.loggingService.logAuthenticationError(error, 'Slack API 認証')
+      throw error
     }
 
     if (!searchResult.ok && searchResult.error) {
-      const error = new Error(
-        `エラー: Slack API の呼び出しに失敗しました。\n${searchResult.error}`
-      );
-      this.loggingService.logAPIError(error, "Slack API 呼び出し");
-      throw error;
+      const error = new Error(`エラー: Slack API の呼び出しに失敗しました。\n${searchResult.error}`)
+      this.loggingService.logAPIError(error, 'Slack API 呼び出し')
+      throw error
     }
   }
 
@@ -555,10 +550,10 @@ export class SlackAPIClient {
     // レート制限エラーの場合：指定時間待機してリトライ
     if (error instanceof RateLimitError) {
       if (attempt < SlackAPIClient.MAX_RETRIES) {
-        await new Promise((resolve) => setTimeout(resolve, error.delayMs));
-        return true;
+        await new Promise((resolve) => setTimeout(resolve, error.delayMs))
+        return true
       }
-      throw error.toError();
+      throw error.toError()
     }
 
     // 認証エラーの場合、リトライせずに即座にエラーを throw
@@ -567,9 +562,9 @@ export class SlackAPIClient {
     if (SlackAPIClient.isAuthenticationErrorMessage(SlackAPIClient.getErrorMessage(error))) {
       const authError = new Error(
         `エラー: Slack API の認証に失敗しました。\nトークンが有効で、必要なスコープが付与されていることを確認してください。\nエラー詳細: ${SlackAPIClient.getErrorMessage(error)}`
-      );
-      this.loggingService.logAuthenticationError(authError, "Slack API 認証");
-      throw authError;
+      )
+      this.loggingService.logAuthenticationError(authError, 'Slack API 認証')
+      throw authError
     }
 
     // 接続エラー（ECONNREFUSED, ETIMEDOUT など）は一時的なネットワーク問題の可能性があるため、
@@ -579,20 +574,20 @@ export class SlackAPIClient {
       if (attempt >= SlackAPIClient.MAX_RETRIES) {
         const connectionError = new Error(
           `エラー: Slack API への接続に失敗しました。\nネットワーク接続を確認してください。\nエラー詳細: ${SlackAPIClient.getErrorMessage(error)}`
-        );
-        this.loggingService.logAPIError(connectionError, "Slack API 接続");
-        throw connectionError;
+        )
+        this.loggingService.logAPIError(connectionError, 'Slack API 接続')
+        throw connectionError
       }
 
-      await this.waitWithExponentialBackoff(attempt);
+      await this.waitWithExponentialBackoff(attempt)
       // logError は unknown 型のエラーを受け取るが、Error オブジェクトに変換して渡す
       // error が既に Error インスタンスの場合はエラーをそのまま使用し、
       // そうでない場合はエラーメッセージから新しい Error オブジェクトを作成
       this.loggingService.logError(
         error instanceof Error ? error : new Error(SlackAPIClient.getErrorMessage(error)),
         `接続エラー検出: ${SlackAPIClient.getErrorMessage(error)}。リトライします（試行 ${attempt + 1}/${SlackAPIClient.MAX_RETRIES + 1}）`
-      );
-      return true;
+      )
+      return true
     }
 
     // catch ブロックで捕捉された例外がレート制限エラーの場合
@@ -600,25 +595,26 @@ export class SlackAPIClient {
     // 指数バックオフでリトライする
     // 注意: 通常は isRateLimitError() で判定されるが、
     // 例外として投げられる場合もあるため、ここでも判定する
-    if (SlackAPIClient.isRateLimitErrorMessage(SlackAPIClient.getErrorMessage(error), SlackAPIClient.getErrorStatusCode(error))) {
+    if (
+      SlackAPIClient.isRateLimitErrorMessage(
+        SlackAPIClient.getErrorMessage(error),
+        SlackAPIClient.getErrorStatusCode(error)
+      )
+    ) {
       if (attempt < SlackAPIClient.MAX_RETRIES) {
-        await this.waitWithExponentialBackoff(attempt);
+        await this.waitWithExponentialBackoff(attempt)
         // logRateLimitError は unknown 型のエラーを受け取るため、
         // そのまま error を渡すことができる
         // ログ記録サービス内で適切にエラーメッセージを取得する
-        this.loggingService.logRateLimitError(
-          error,
-          "Slack API 呼び出し",
-          attempt + 1
-        );
-        return true;
+        this.loggingService.logRateLimitError(error, 'Slack API 呼び出し', attempt + 1)
+        return true
       }
     }
 
     // その他のエラーはリトライしない
     throw new Error(
       `エラー: Slack API の呼び出しに失敗しました。\n${SlackAPIClient.getErrorMessage(error)}`
-    );
+    )
   }
 
   /**
@@ -630,39 +626,37 @@ export class SlackAPIClient {
   async channelName(channelId: string): Promise<string> {
     if (!this.app) {
       throw new Error(
-        "エラー: Slack API クライアントが初期化されていません。\ninitializeClient() を先に呼び出してください。"
-      );
+        'エラー: Slack API クライアントが初期化されていません。\ninitializeClient() を先に呼び出してください。'
+      )
     }
 
     try {
       const channelInfoResult = await this.app.client.conversations.info({
         channel: channelId,
-      });
+      })
 
       if (!channelInfoResult.ok || !channelInfoResult.channel) {
         throw new Error(
           `エラー: チャンネル情報の取得に失敗しました。\n${channelInfoResult.error || SlackAPIClient.DEFAULT_ERROR_MESSAGE}`
-        );
+        )
       }
 
       // チャンネル名が取得できない場合（name が undefined または空文字列の場合）、
       // チャンネルIDをフォールバックとして返す
       // チャンネルIDをフォールバックとして返すことで、チャンネル名の取得に失敗しても検索処理を継続できる
-      return channelInfoResult.channel.name || channelId;
+      return channelInfoResult.channel.name || channelId
     } catch (error: unknown) {
       // catch ブロックで捕捉されるエラーは unknown 型
       // エラーメッセージを安全に取得する
-      const errorMessage = SlackAPIClient.getErrorMessage(error);
+      const errorMessage = SlackAPIClient.getErrorMessage(error)
       // logAPIError は unknown 型のエラーを受け取るが、Error オブジェクトに変換して渡す
       // error が既に Error インスタンスの場合はエラーをそのまま使用し、
       // そうでない場合はエラーメッセージから新しい Error オブジェクトを作成
       this.loggingService.logAPIError(
         error instanceof Error ? error : new Error(errorMessage),
         `チャンネル情報の取得に失敗しました: ${channelId}`
-      );
-      throw new Error(
-        `エラー: チャンネル情報の取得に失敗しました。\n${errorMessage}`
-      );
+      )
+      throw new Error(`エラー: チャンネル情報の取得に失敗しました。\n${errorMessage}`)
     }
   }
 
@@ -675,7 +669,7 @@ export class SlackAPIClient {
       (apiResult?.error === SlackAPIClient.ERROR_CODE_RATELIMITED ||
         apiResult?.error === SlackAPIClient.ERROR_CODE_RATE_LIMITED ||
         apiResult?.statusCode === SlackAPIClient.HTTP_STATUS_TOO_MANY_REQUESTS)
-    );
+    )
   }
 
   /**
@@ -688,15 +682,15 @@ export class SlackAPIClient {
         apiResult?.error === SlackAPIClient.ERROR_CODE_INVALID_TOKEN ||
         apiResult?.error === SlackAPIClient.ERROR_CODE_ACCOUNT_INACTIVE ||
         apiResult?.error === SlackAPIClient.ERROR_CODE_TOKEN_REVOKED)
-    );
+    )
   }
 
   /**
    * 接続エラーかどうかを判定する（リトライ可能なエラー）
    */
   private static isConnectionError(error: unknown): boolean {
-    const errorCode = SlackAPIClient.getErrorCode(error);
-    const errorMessage = SlackAPIClient.getErrorMessage(error);
+    const errorCode = SlackAPIClient.getErrorCode(error)
+    const errorMessage = SlackAPIClient.getErrorMessage(error)
 
     return (
       errorCode === SlackAPIClient.ERROR_CODE_ECONNREFUSED ||
@@ -707,7 +701,7 @@ export class SlackAPIClient {
       errorMessage.includes(SlackAPIClient.ERROR_CODE_ECONNREFUSED) ||
       errorMessage.includes(SlackAPIClient.ERROR_CODE_ETIMEDOUT) ||
       errorMessage.includes(SlackAPIClient.ERROR_CODE_ENOTFOUND)
-    );
+    )
   }
 
   /**
@@ -721,7 +715,7 @@ export class SlackAPIClient {
       errorMessage.includes(SlackAPIClient.ERROR_CODE_INVALID_TOKEN) ||
       errorMessage.includes(SlackAPIClient.ERROR_CODE_ACCOUNT_INACTIVE) ||
       errorMessage.includes(SlackAPIClient.ERROR_CODE_TOKEN_REVOKED)
-    );
+    )
   }
 
   /**
@@ -730,15 +724,12 @@ export class SlackAPIClient {
    * @param statusCode HTTPステータスコード（オプション）
    * @returns レート制限エラーの場合 true
    */
-  private static isRateLimitErrorMessage(
-    errorMessage: string,
-    statusCode?: number
-  ): boolean {
+  private static isRateLimitErrorMessage(errorMessage: string, statusCode?: number): boolean {
     return (
       errorMessage.includes(SlackAPIClient.ERROR_CODE_RATELIMITED) ||
       errorMessage.includes(SlackAPIClient.ERROR_CODE_RATE_LIMITED) ||
       statusCode === SlackAPIClient.HTTP_STATUS_TOO_MANY_REQUESTS
-    );
+    )
   }
 
   /**
@@ -756,12 +747,10 @@ export class SlackAPIClient {
     // retry-after ヘッダーから待機時間（秒）を取得
     // ヘッダーが存在する場合は文字列を数値に変換し、存在しない場合は undefined
     // parseInt の第2引数に 10 を指定して10進数として解釈する
-    const retryAfterValue = Array.isArray(retryAfterHeader)
-      ? retryAfterHeader[0]
-      : retryAfterHeader;
+    const retryAfterValue = Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader
     const retryAfterSeconds = retryAfterValue
       ? parseInt(retryAfterValue, SlackAPIClient.DECIMAL_RADIX)
-      : undefined;
+      : undefined
 
     // retry-after ヘッダーは秒単位で返されるが、setTimeout はミリ秒単位を期待するため、ミリ秒に変換
     // 指数バックオフの底を2にすることで、待機時間が適度に増加し（1秒→2秒→4秒→8秒）、
@@ -769,7 +758,7 @@ export class SlackAPIClient {
     // 一般的な指数バックオフの実装で広く使用されている値
     return retryAfterSeconds
       ? retryAfterSeconds * SlackAPIClient.MILLISECONDS_PER_SECOND
-      : SlackAPIClient.BASE_DELAY_MS * Math.pow(SlackAPIClient.EXPONENTIAL_BACKOFF_BASE, attempt);
+      : SlackAPIClient.BASE_DELAY_MS * Math.pow(SlackAPIClient.EXPONENTIAL_BACKOFF_BASE, attempt)
   }
 
   /**
@@ -777,22 +766,20 @@ export class SlackAPIClient {
    * @param matches Slack API のメッセージマッチ配列
    * @returns 内部形式の SlackMessage 配列
    */
-  private convertSlackMatchesToMessages(
-    matches: any[] | undefined
-  ): SlackMessage[] {
+  private convertSlackMatchesToMessages(matches: any[] | undefined): SlackMessage[] {
     return (matches ?? []).map((match) => ({
       type: match.type ?? SlackAPIClient.DEFAULT_MESSAGE_TYPE,
       channel: {
-        id: match.channel?.id ?? "",
-        name: match.channel?.name ?? "",
+        id: match.channel?.id ?? '',
+        name: match.channel?.name ?? '',
       },
-      user: match.user ?? "",
+      user: match.user ?? '',
       username: match.username,
-      text: match.text ?? "",
-      ts: match.ts ?? "",
-      permalink: match.permalink ?? "",
+      text: match.text ?? '',
+      ts: match.ts ?? '',
+      permalink: match.permalink ?? '',
       score: match.score,
-    }));
+    }))
   }
 
   /**
@@ -800,11 +787,9 @@ export class SlackAPIClient {
    * @param paging Slack API のページング情報
    * @returns 内部形式のページング情報（存在しない場合は undefined）
    */
-  private convertPagingInfo(
-    paging: any
-  ): SlackSearchResponse["messages"]["paging"] | undefined {
+  private convertPagingInfo(paging: any): SlackSearchResponse['messages']['paging'] | undefined {
     if (!paging) {
-      return undefined;
+      return undefined
     }
 
     return {
@@ -812,7 +797,7 @@ export class SlackAPIClient {
       totalResultCount: paging.total ?? SlackAPIClient.DEFAULT_PAGING_TOTAL,
       pageNumber: paging.page ?? SlackAPIClient.DEFAULT_PAGE_NUMBER,
       totalPageCount: paging.pages ?? SlackAPIClient.DEFAULT_TOTAL_PAGE_COUNT,
-    };
+    }
   }
 
   /**
@@ -828,6 +813,11 @@ export class SlackAPIClient {
     // 過度な待機時間を避けられる。一般的な指数バックオフの実装で広く使用されている値
     // setTimeout を Promise でラップして await 可能にする
     // Promise でラップすることで、指定した時間（ミリ秒）だけ処理を待機できる
-    await new Promise((resolve) => setTimeout(resolve, SlackAPIClient.BASE_DELAY_MS * Math.pow(SlackAPIClient.EXPONENTIAL_BACKOFF_BASE, attempt)));
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        SlackAPIClient.BASE_DELAY_MS * Math.pow(SlackAPIClient.EXPONENTIAL_BACKOFF_BASE, attempt)
+      )
+    )
   }
 }

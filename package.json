@@ -12,7 +12,9 @@
   "scripts": {
     "test": "bun test",
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
-    "inspector": "npx @modelcontextprotocol/inspector bun dist/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector bun dist/index.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "private": true,
   "repository": {
@@ -34,7 +36,8 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prettier": "3.8.0"
   },
   "peerDependencies": {
     "typescript": "^5"

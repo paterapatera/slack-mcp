@@ -1,11 +1,11 @@
-import { McpServer as SDKMcpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { Implementation } from "@modelcontextprotocol/sdk/types.js";
-import { ConfigService, ConfigError } from "./config-service.js";
-import { SlackAPIClient } from "./slack-api-client.js";
-import { SearchService, SearchOptions, SearchResult } from "./search-service.js";
-import { LoggingService } from "./logging-service.js";
-import { z } from "zod";
+import { McpServer as SDKMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { Implementation } from '@modelcontextprotocol/sdk/types.js'
+import { ConfigService, ConfigError } from './config-service.js'
+import { SlackAPIClient } from './slack-api-client.js'
+import { SearchService, SearchOptions, SearchResult } from './search-service.js'
+import { LoggingService } from './logging-service.js'
+import { z } from 'zod'
 
 /**
  * MCP サーバーのラッパークラス
@@ -13,30 +13,30 @@ import { z } from "zod";
  */
 export class McpServer {
   /** 基盤となる SDK の Server インスタンス */
-  private sdkServer: SDKMcpServer;
+  private sdkServer: SDKMcpServer
   /** 現在接続されている Transport インスタンス */
-  private transportInstance: StdioServerTransport | null;
+  private transportInstance: StdioServerTransport | null
   /** Slack API クライアント */
-  private slackClient: SlackAPIClient;
+  private slackClient: SlackAPIClient
   /** 検索サービス */
-  private searchService: SearchService | null;
+  private searchService: SearchService | null
   /** 設定情報 */
-  private config: ReturnType<typeof ConfigService.loadConfig> | null;
+  private config: ReturnType<typeof ConfigService.loadConfig> | null
   /** ログ記録サービス */
-  private loggingService: LoggingService;
+  private loggingService: LoggingService
 
   /**
    * 基盤となる SDK の Server インスタンス
    */
   get server() {
-    return this.sdkServer.server;
+    return this.sdkServer.server
   }
 
   /**
    * 現在接続されている Transport インスタンス
    */
   get transport(): StdioServerTransport | null {
-    return this.transportInstance;
+    return this.transportInstance
   }
 
   /**
@@ -44,12 +44,12 @@ export class McpServer {
    * @param serverInfo サーバー情報（名前、バージョンなど）
    */
   constructor(serverInfo: Implementation) {
-    this.sdkServer = new SDKMcpServer(serverInfo);
-    this.loggingService = new LoggingService();
-    this.slackClient = new SlackAPIClient(this.loggingService);
-    this.transportInstance = null;
-    this.searchService = null;
-    this.config = null;
+    this.sdkServer = new SDKMcpServer(serverInfo)
+    this.loggingService = new LoggingService()
+    this.slackClient = new SlackAPIClient(this.loggingService)
+    this.transportInstance = null
+    this.searchService = null
+    this.config = null
   }
 
   /**
@@ -63,20 +63,18 @@ export class McpServer {
    */
   async startServer(): Promise<void> {
     try {
-      const slackConfig = this.loadAndValidateConfig();
-      this.initializeServices(slackConfig);
-      this.registerTools();
-      await this.connectTransport();
+      const slackConfig = this.loadAndValidateConfig()
+      this.initializeServices(slackConfig)
+      this.registerTools()
+      await this.connectTransport()
     } catch (error: unknown) {
       if (error instanceof ConfigError) {
-        throw error;
+        throw error
       }
       if (error instanceof Error) {
-        throw error;
+        throw error
       }
-      throw new Error(
-        `エラー: サーバーの起動に失敗しました。\n${String(error)}`
-      );
+      throw new Error(`エラー: サーバーの起動に失敗しました。\n${String(error)}`)
     }
   }
 
@@ -84,23 +82,18 @@ export class McpServer {
    * 設定を読み込み検証する
    */
   private loadAndValidateConfig(): ReturnType<typeof ConfigService.loadConfig> {
-    const slackConfig = ConfigService.loadConfig();
-    ConfigService.validateConfig(slackConfig);
-    return slackConfig;
+    const slackConfig = ConfigService.loadConfig()
+    ConfigService.validateConfig(slackConfig)
+    return slackConfig
   }
 
   /**
    * サービスを初期化する
    */
-  private initializeServices(
-    config: ReturnType<typeof ConfigService.loadConfig>
-  ): void {
-    this.config = config;
-    this.slackClient.initializeClient(config.slackUserToken);
-    this.searchService = new SearchService(
-      this.slackClient,
-      this.loggingService
-    );
+  private initializeServices(config: ReturnType<typeof ConfigService.loadConfig>): void {
+    this.config = config
+    this.slackClient.initializeClient(config.slackUserToken)
+    this.searchService = new SearchService(this.slackClient, this.loggingService)
   }
 
   /**
@@ -108,21 +101,17 @@ export class McpServer {
    */
   private registerTools(): void {
     if (!this.config || !this.searchService) {
-      throw new Error("サービスが初期化されていません");
+      throw new Error('サービスが初期化されていません')
     }
-    this.createSearchMessagesTool(
-      this.searchService,
-      this.config,
-      this.loggingService
-    );
+    this.createSearchMessagesTool(this.searchService, this.config, this.loggingService)
   }
 
   /**
    * Transport に接続する
    */
   private async connectTransport(): Promise<void> {
-    this.transportInstance = new StdioServerTransport();
-    await this.sdkServer.connect(this.transportInstance);
+    this.transportInstance = new StdioServerTransport()
+    await this.sdkServer.connect(this.transportInstance)
   }
 
   /**
@@ -130,20 +119,20 @@ export class McpServer {
    * @param transport StdioServerTransport インスタンス（省略時は新規作成）
    */
   async connectToTransport(transport?: StdioServerTransport): Promise<void> {
-    this.transportInstance = transport ?? new StdioServerTransport();
-    await this.sdkServer.connect(this.transportInstance);
+    this.transportInstance = transport ?? new StdioServerTransport()
+    await this.sdkServer.connect(this.transportInstance)
   }
 
   /**
    * サーバーを閉じる
    */
   async closeServer(): Promise<void> {
-    await this.sdkServer.close();
-    this.transportInstance = null;
+    await this.sdkServer.close()
+    this.transportInstance = null
   }
 
   /** search_messages ツール名 */
-  private static readonly TOOL_NAME_SEARCH_MESSAGES = "search_messages";
+  private static readonly TOOL_NAME_SEARCH_MESSAGES = 'search_messages'
 
   /**
    * search_messages ツールを登録する
@@ -156,28 +145,33 @@ export class McpServer {
     config: ReturnType<typeof ConfigService.loadConfig>,
     loggingService: LoggingService
   ): void {
-    const inputSchema = this.createSearchToolSchema();
+    const inputSchema = this.createSearchToolSchema()
 
     // ツールハンドラーは async 関数として実装されているため、
     // MCP SDK が自動的に複数のリクエストを並行して処理する
     this.sdkServer.registerTool(
       McpServer.TOOL_NAME_SEARCH_MESSAGES,
       {
-        description: "Slack ワークスペース内のメッセージを検索します",
+        description: 'Slack ワークスペース内のメッセージを検索します',
         inputSchema: inputSchema,
       },
       async (args) => {
-        const result = await this.executeSearchToolHandler(args, searchService, config, loggingService);
+        const result = await this.executeSearchToolHandler(
+          args,
+          searchService,
+          config,
+          loggingService
+        )
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(result, null, 2),
             },
           ],
-        };
+        }
       }
-    );
+    )
   }
 
   /**
@@ -185,9 +179,9 @@ export class McpServer {
    */
   private createSearchToolSchema() {
     return z.object({
-      query: z.string().describe("検索クエリ"),
-      maxResultCount: z.number().optional().describe("検索結果の最大件数"),
-    });
+      query: z.string().describe('検索クエリ'),
+      maxResultCount: z.number().optional().describe('検索結果の最大件数'),
+    })
   }
 
   /**
@@ -200,20 +194,17 @@ export class McpServer {
     loggingService: LoggingService
   ): Promise<{ messages: any[]; total: number; hasMore: boolean }> {
     try {
-      const searchOptions = this.buildSearchOptions(args, config);
-      const searchResult = await searchService.searchMessages(searchOptions);
+      const searchOptions = this.buildSearchOptions(args, config)
+      const searchResult = await searchService.searchMessages(searchOptions)
 
-      return this.formatSearchResponse(searchResult);
+      return this.formatSearchResponse(searchResult)
     } catch (error: unknown) {
       // catch ブロックで捕捉されるエラーは unknown 型
       // MCP SDK が自動的にエラーレスポンスを生成するため、ここではログに記録
-      loggingService.logError(
-        error,
-        "search_messages ツールの実行中にエラーが発生しました"
-      );
+      loggingService.logError(error, 'search_messages ツールの実行中にエラーが発生しました')
 
       // MCP SDK は -32603 (Internal error) を返す
-      throw error;
+      throw error
     }
   }
 
@@ -229,7 +220,7 @@ export class McpServer {
     // args.query は z.string() で検証済みなので string として扱える
     // args.maxResultCount は z.number().optional() で検証済みなので
     // number | undefined として扱える
-    const typedArgs = args as { query: string; maxResultCount?: number };
+    const typedArgs = args as { query: string; maxResultCount?: number }
 
     return {
       query: typedArgs.query,
@@ -240,18 +231,21 @@ export class McpServer {
       // 非nullアサーション演算子は使用しない（undefined が有効な値であるため）
       channelIds: config?.slackChannelIds,
       teamId: config?.slackTeamId,
-    };
+    }
   }
 
   /**
    * 検索結果をMCPレスポンス形式にフォーマットする
    */
-  private formatSearchResponse(searchResult: SearchResult): { messages: any[]; total: number; hasMore: boolean } {
+  private formatSearchResponse(searchResult: SearchResult): {
+    messages: any[]
+    total: number
+    hasMore: boolean
+  } {
     return {
       messages: searchResult.messages,
       total: searchResult.totalResultCount,
       hasMore: searchResult.hasMoreResults,
-    };
+    }
   }
 }
-
