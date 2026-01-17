@@ -21,6 +21,7 @@ export interface SlackMessage {
   text: string;
   ts: string;
   permalink: string;
+  score?: number;
 }
 
 export interface SlackSearchResponse {
@@ -227,6 +228,7 @@ export class SlackAPIClient {
               text: match.text ?? "",
               ts: match.ts ?? "",
               permalink: match.permalink ?? "",
+              score: match.score,
             })),
             paging: result.messages?.paging
               ? {
@@ -305,5 +307,43 @@ export class SlackAPIClient {
       lastError ||
       new Error("エラー: Slack API の呼び出しに失敗しました。")
     );
+  }
+
+  /**
+   * チャンネルIDからチャンネル名を取得する
+   * @param channelId チャンネルID
+   * @returns チャンネル名
+   * @throws {Error} app が初期化されていない場合、または API 呼び出しが失敗した場合
+   */
+  async getChannelName(channelId: string): Promise<string> {
+    if (!this.app) {
+      throw new Error(
+        "エラー: Slack API クライアントが初期化されていません。\ninitialize() を先に呼び出してください。"
+      );
+    }
+
+    try {
+      const result = await this.app.client.conversations.info({
+        channel: channelId,
+      });
+
+      if (!result.ok || !result.channel) {
+        throw new Error(
+          `エラー: チャンネル情報の取得に失敗しました。\n${result.error || "不明なエラー"}`
+        );
+      }
+
+      // チャンネル名を返す（# プレフィックスは不要）
+      return result.channel.name || channelId;
+    } catch (error: any) {
+      const errorMessage = error.message || String(error);
+      this.loggingService.logAPIError(
+        error,
+        `チャンネル情報の取得に失敗しました: ${channelId}`
+      );
+      throw new Error(
+        `エラー: チャンネル情報の取得に失敗しました。\n${errorMessage}`
+      );
+    }
   }
 }

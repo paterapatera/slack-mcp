@@ -8,10 +8,10 @@ export class LoggingService {
     successfulRequests: number;
     failedRequests: number;
   } = {
-    totalRequests: 0,
-    successfulRequests: 0,
-    failedRequests: 0,
-  };
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+    };
 
   /**
    * エラーをログに記録する
@@ -129,8 +129,8 @@ export class LoggingService {
     const successRate =
       this.searchRequestStats.totalRequests > 0
         ? (this.searchRequestStats.successfulRequests /
-            this.searchRequestStats.totalRequests) *
-          100
+          this.searchRequestStats.totalRequests) *
+        100
         : 0;
 
     return {
