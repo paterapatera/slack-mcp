@@ -26,7 +26,7 @@ describe("エラーハンドリングのテスト", () => {
 
   afterEach(async () => {
     if (server) {
-      await server.close();
+      await server.closeServer();
     }
     // 環境変数を元に戻す
     process.env = originalEnv;
@@ -36,20 +36,20 @@ describe("エラーハンドリングのテスト", () => {
     it("環境変数未設定時に適切なエラーを throw する", async () => {
       delete process.env.SLACK_USER_TOKEN;
 
-      await expect(server.start()).rejects.toThrow(/SLACK_USER_TOKEN/);
+      await expect(server.startServer()).rejects.toThrow(/SLACK_USER_TOKEN/);
     });
 
     it("Slack API 接続失敗時に適切なエラーを throw する", async () => {
       process.env.SLACK_USER_TOKEN = "invalid-token";
 
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
   });
 
   describe("リクエスト時エラーのテスト", () => {
     beforeEach(() => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-      slackClient.initialize(process.env.SLACK_USER_TOKEN);
+      slackClient.initializeClient(process.env.SLACK_USER_TOKEN);
     });
 
     it("無効なリクエスト（空のクエリ）でエラーを throw する", async () => {
@@ -68,7 +68,7 @@ describe("エラーハンドリングのテスト", () => {
   describe("レート制限エラー時のリトライロジックのテスト", () => {
     beforeEach(() => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-      slackClient.initialize(process.env.SLACK_USER_TOKEN);
+      slackClient.initializeClient(process.env.SLACK_USER_TOKEN);
     });
 
     it("レート制限エラー時にリトライロジックが実行される", async () => {
@@ -81,7 +81,7 @@ describe("エラーハンドリングのテスト", () => {
   describe("無効なチャンネルIDの処理のテスト", () => {
     beforeEach(() => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-      slackClient.initialize(process.env.SLACK_USER_TOKEN);
+      slackClient.initializeClient(process.env.SLACK_USER_TOKEN);
     });
 
     it("無効なチャンネルIDでエラーを throw する", async () => {

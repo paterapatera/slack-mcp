@@ -54,7 +54,7 @@ describe("LoggingService", () => {
     loggingService.logSearchRequestSuccess("test query", 10);
     loggingService.logSearchRequestFailure("test query", new Error("エラー"));
     
-    const stats = loggingService.getSearchRequestStats();
+    const stats = loggingService.searchRequestStats();
     expect(stats.totalRequests).toBe(2);
     expect(stats.successfulRequests).toBe(1);
     expect(stats.failedRequests).toBe(1);

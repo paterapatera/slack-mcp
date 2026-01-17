@@ -21,7 +21,7 @@ describe("MCP Server", () => {
 
   afterEach(async () => {
     if (server) {
-      await server.close();
+      await server.closeServer();
     }
     // 環境変数を元に戻す
     process.env = originalEnv;
@@ -37,7 +37,7 @@ describe("MCP Server", () => {
   });
 
   it("stdio transport に接続する", async () => {
-    await server.connect(transport);
+    await server.connectToTransport(transport);
     expect(server.transport).toBe(transport);
   });
 
@@ -45,7 +45,7 @@ describe("MCP Server", () => {
     it("環境変数が設定されている場合、正常に起動する", async () => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token";
       
-      await server.start();
+      await server.startServer();
       
       expect(server).toBeDefined();
     });
@@ -53,19 +53,19 @@ describe("MCP Server", () => {
     it("SLACK_USER_TOKEN が未設定の場合、起動を中止する", async () => {
       delete process.env.SLACK_USER_TOKEN;
       
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
 
     it("SLACK_USER_TOKEN が空文字列の場合、起動を中止する", async () => {
       process.env.SLACK_USER_TOKEN = "";
       
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
 
     it("無効なトークン形式の場合、起動を中止する", async () => {
       process.env.SLACK_USER_TOKEN = "invalid-token";
       
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
   });
 
@@ -75,7 +75,7 @@ describe("MCP Server", () => {
     });
 
     it("search_messages ツールが登録されている", async () => {
-      await server.start();
+      await server.startServer();
       
       // SDK サーバーにツールが登録されているか確認
       // 実際のツール登録は start() 内で行われる
@@ -83,7 +83,7 @@ describe("MCP Server", () => {
     });
 
     it("ツールハンドラーが正しく実装されている", async () => {
-      await server.start();
+      await server.startServer();
       
       // ツールが登録されていることを確認
       // 実際のツール呼び出しは統合テストで行う
@@ -97,7 +97,7 @@ describe("MCP Server", () => {
     });
 
     it("予期しないエラーをキャッチし、適切なエラーレスポンスに変換する", async () => {
-      await server.start();
+      await server.startServer();
       
       // ツールハンドラー内でエラーが発生した場合の処理を確認
       // 実際のエラーハンドリングは統合テストで行う
@@ -105,7 +105,7 @@ describe("MCP Server", () => {
     });
 
     it("エラーをログに記録する", async () => {
-      await server.start();
+      await server.startServer();
       
       // エラーログの記録を確認
       // 実際のログ記録は統合テストで行う
@@ -119,7 +119,7 @@ describe("MCP Server", () => {
     });
 
     it("複数のリクエストを並行して処理できる", async () => {
-      await server.start();
+      await server.startServer();
       
       // MCP SDK は既に非同期処理をサポートしているため、
       // ツールハンドラーが async 関数である限り、複数のリクエストは自動的に並行処理される
@@ -133,7 +133,7 @@ describe("MCP Server", () => {
     });
 
     it("非同期処理により、複数の検索リクエストを並行して処理する", async () => {
-      await server.start();
+      await server.startServer();
       
       // 非同期処理により、複数の検索リクエストを並行して処理できることを確認
       // 実際の並行処理のテストは統合テストで行う

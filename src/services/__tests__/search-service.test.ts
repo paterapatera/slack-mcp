@@ -5,7 +5,7 @@ import { SlackAPIClient } from "../slack-api-client";
 test("searchMessages() は有効なクエリで検索を実行する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -17,7 +17,7 @@ test("searchMessages() は有効なクエリで検索を実行する", async () 
 test("searchMessages() は空のクエリでエラーを throw する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -33,7 +33,7 @@ test("searchMessages() は空のクエリでエラーを throw する", async ()
 test("searchMessages() は Slack API Client を呼び出す", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -45,7 +45,7 @@ test("searchMessages() は Slack API Client を呼び出す", async () => {
 test("searchMessages() は channelIds が指定されていない場合、全チャンネルで検索する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -57,7 +57,7 @@ test("searchMessages() は channelIds が指定されていない場合、全チ
 test("searchMessages() は channelIds が指定されている場合、指定されたチャンネルで検索する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -69,7 +69,7 @@ test("searchMessages() は channelIds が指定されている場合、指定さ
 test("searchMessages() は複数の channelIds が指定されている場合、すべてのチャンネルで検索する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -81,7 +81,7 @@ test("searchMessages() は複数の channelIds が指定されている場合、
 test("searchMessages() は無効なチャンネルIDでエラーを throw する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -93,7 +93,7 @@ test("searchMessages() は無効なチャンネルIDでエラーを throw する
 test("searchMessages() は teamId が指定されている場合、検索オプションに含める", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -105,7 +105,7 @@ test("searchMessages() は teamId が指定されている場合、検索オプ�
 test("searchMessages() は teamId が未指定の場合、検索オプションに含めない", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -130,7 +130,7 @@ test("searchMessages() はタイムスタンプを ISO 8601 形式に変換す�
 test("searchMessages() は空の結果セットを適切な形式で返却する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   
@@ -142,7 +142,7 @@ test("searchMessages() は空の結果セットを適切な形式で返却する
 test("searchMessages() はメッセージ内容、タイムスタンプ、チャンネル情報、ユーザー情報を含む構造化された形式で返却する", async () => {
   const slackClient = new SlackAPIClient();
   const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-  slackClient.initialize(token);
+  slackClient.initializeClient(token);
   
   const searchService = new SearchService(slackClient);
   

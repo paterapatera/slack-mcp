@@ -26,7 +26,7 @@ describe("メッセージ検索フローの統合テスト", () => {
   describe("Search Service と Slack API Client の統合テスト", () => {
     beforeEach(() => {
       const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-      slackClient.initialize(token);
+      slackClient.initializeClient(token);
     });
 
     it("Search Service が Slack API Client を正しく呼び出す", async () => {
@@ -46,7 +46,7 @@ describe("メッセージ検索フローの統合テスト", () => {
   describe("エンドツーエンドの検索リクエストフローのテスト", () => {
     beforeEach(() => {
       const token = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
-      slackClient.initialize(token);
+      slackClient.initializeClient(token);
     });
 
     it("検索リクエストが正しい形式で処理される", async () => {

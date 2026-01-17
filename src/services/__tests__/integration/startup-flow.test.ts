@@ -18,7 +18,7 @@ describe("起動フローの統合テスト", () => {
 
   afterEach(async () => {
     if (server) {
-      await server.close();
+      await server.closeServer();
     }
     // 環境変数を元に戻す
     process.env = originalEnv;
@@ -30,7 +30,7 @@ describe("起動フローの統合テスト", () => {
       process.env.SLACK_TEAM_ID = "T1234567890";
       process.env.SLACK_CHANNEL_IDS = "C1234567890,C0987654321";
 
-      await server.start();
+      await server.startServer();
 
       // サーバーが正常に起動したことを確認
       expect(server).toBeDefined();
@@ -40,14 +40,14 @@ describe("起動フローの統合テスト", () => {
     it("SLACK_USER_TOKEN が未設定の場合、起動を中止する", async () => {
       delete process.env.SLACK_USER_TOKEN;
 
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
 
     it("SLACK_CHANNEL_IDS がカンマ区切りで正しく読み込まれる", async () => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
       process.env.SLACK_CHANNEL_IDS = "C1234567890,C0987654321";
 
-      const config = ConfigService.load();
+      const config = ConfigService.loadConfig();
       expect(config.slackChannelIds).toEqual(["C1234567890", "C0987654321"]);
     });
   });
@@ -56,7 +56,7 @@ describe("起動フローの統合テスト", () => {
     it("有効なトークンで Slack API Client が初期化される", async () => {
       process.env.SLACK_USER_TOKEN = "xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx";
 
-      await server.start();
+      await server.startServer();
 
       // サーバーが正常に起動したことを確認
       expect(server).toBeDefined();
@@ -65,7 +65,7 @@ describe("起動フローの統合テスト", () => {
     it("無効なトークン形式の場合、起動を中止する", async () => {
       process.env.SLACK_USER_TOKEN = "invalid-token";
 
-      await expect(server.start()).rejects.toThrow();
+      await expect(server.startServer()).rejects.toThrow();
     });
   });
 
@@ -73,13 +73,13 @@ describe("起動フローの統合テスト", () => {
     it("環境変数未設定時に適切なエラーメッセージを返す", async () => {
       delete process.env.SLACK_USER_TOKEN;
 
-      await expect(server.start()).rejects.toThrow(/SLACK_USER_TOKEN/);
+      await expect(server.startServer()).rejects.toThrow(/SLACK_USER_TOKEN/);
     });
 
     it("Slack API Client 初期化失敗時に適切なエラーメッセージを返す", async () => {
       process.env.SLACK_USER_TOKEN = "invalid-token";
 
-      await expect(server.start()).rejects.toThrow(/Slack API/);
+      await expect(server.startServer()).rejects.toThrow(/Slack API/);
     });
   });
 });

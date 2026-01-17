@@ -17,7 +17,7 @@ describe("パフォーマンステスト", () => {
 
   afterEach(async () => {
     if (server) {
-      await server.close();
+      await server.closeServer();
     }
     // 環境変数を元に戻す
     process.env = originalEnv;
@@ -29,7 +29,7 @@ describe("パフォーマンステスト", () => {
     });
 
     it("複数のリクエストを並行して処理できる", async () => {
-      await server.start();
+      await server.startServer();
 
       // ツールハンドラーが async 関数であるため、複数のリクエストは並行処理される
       // 実際の並行処理のテストは統合テストで行う
@@ -37,7 +37,7 @@ describe("パフォーマンステスト", () => {
     });
 
     it("非同期処理により、複数の検索リクエストを並行して処理する", async () => {
-      await server.start();
+      await server.startServer();
 
       // 非同期処理により、複数の検索リクエストを並行して処理できることを確認
       expect(server.server).toBeDefined();
@@ -50,7 +50,7 @@ describe("パフォーマンステスト", () => {
     });
 
     it("レート制限エラー時に適切にリトライする", async () => {
-      await server.start();
+      await server.startServer();
 
       // レート制限エラー時のリトライロジックを確認
       // 実際のレート制限エラーは統合テストで行う

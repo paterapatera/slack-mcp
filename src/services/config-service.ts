@@ -1,29 +1,54 @@
+/**
+ * 設定情報
+ * 環境変数から読み込まれた設定を保持
+ */
 export interface Config {
+  /** Slack ユーザートークン */
   slackUserToken: string;
+  /** Slack チームID（オプション） */
   slackTeamId?: string;
+  /** Slack チャンネルIDの配列（オプション） */
   slackChannelIds?: string[];
 }
 
+/**
+ * 設定エラー
+ * 環境変数の不足など、設定に関するエラーを表す
+ */
 export class ConfigError extends Error {
+  /** エラー名 */
+  private static readonly ERROR_NAME = "ConfigError";
+  /** 不足している環境変数名の配列（オプション） */
   missingVars?: string[];
 
   constructor(message: string, missingVars?: string[]) {
     super(message);
-    this.name = "ConfigError";
+    this.name = ConfigError.ERROR_NAME;
     this.missingVars = missingVars;
   }
 }
 
+/**
+ * 設定サービス
+ * 環境変数から設定を読み込み、検証する機能を提供
+ */
 export class ConfigService {
+  /** チャンネルIDの区切り文字（カンマ） */
+  private static readonly CHANNEL_IDS_SEPARATOR = ",";
+  /** 環境変数名: Slack ユーザートークン */
+  private static readonly ENV_VAR_SLACK_USER_TOKEN = "SLACK_USER_TOKEN";
+
   /**
    * 環境変数から設定を読み込む
    */
-  static load(): Config {
+  static loadConfig(): Config {
     const slackUserToken = process.env.SLACK_USER_TOKEN;
     const slackTeamId = process.env.SLACK_TEAM_ID;
     const slackChannelIds = this.parseChannelIds(process.env.SLACK_CHANNEL_IDS);
 
     return {
+      // 環境変数が未設定の場合、空文字列をデフォルト値として設定
+      // validateConfig() で空文字列をチェックするため、ここでは空文字列を設定する
       slackUserToken: slackUserToken ?? "",
       slackTeamId: slackTeamId ?? undefined,
       slackChannelIds: slackChannelIds ?? undefined,
@@ -34,18 +59,18 @@ export class ConfigService {
    * 設定を検証する
    * @throws {ConfigError} 必須環境変数が不足している場合
    */
-  static validate(config: Config): void {
+  static validateConfig(config: Config): void {
     const missingVars: string[] = [];
 
-    // SLACK_USER_TOKEN の必須チェック
     if (!config.slackUserToken || config.slackUserToken.trim() === "") {
-      missingVars.push("SLACK_USER_TOKEN");
+      missingVars.push(ConfigService.ENV_VAR_SLACK_USER_TOKEN);
     }
 
-    // エラーがある場合は throw
     if (missingVars.length > 0) {
-      const message = `エラー: 必須環境変数 ${missingVars.join(", ")} が設定されていません。\n環境変数 ${missingVars.join(", ")} を設定してください。`;
-      throw new ConfigError(message, missingVars);
+      throw new ConfigError(
+        `エラー: 必須環境変数 ${missingVars.join(", ")} が設定されていません。\n環境変数 ${missingVars.join(", ")} を設定してください。`,
+        missingVars
+      );
     }
   }
 
@@ -58,7 +83,7 @@ export class ConfigService {
     }
 
     return channelIds
-      .split(",")
+      .split(ConfigService.CHANNEL_IDS_SEPARATOR)
       .map((id) => id.trim())
       .filter((id) => id.length > 0);
   }
