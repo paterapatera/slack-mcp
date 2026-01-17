@@ -61,6 +61,24 @@ bun run build
 
 ## 使用方法
 
+### bun link でインストール
+
+ローカル開発環境で使用する場合、`bun link` を使用します：
+
+```bash
+# プロジェクトディレクトリで実行
+bun link
+
+# グローバルにリンクされた後、どこからでも実行可能
+slack-mcp
+```
+
+環境変数を指定する場合：
+
+```bash
+SLACK_USER_TOKEN="xoxb-your-token" slack-mcp
+```
+
 ### MCP クライアントとして使用
 
 このサーバーは MCP クライアント（例: Claude Desktop, MCP Inspector）から使用されます。
@@ -68,6 +86,27 @@ bun run build
 #### Claude Desktop での設定
 
 `claude_desktop_config.json` に以下を追加：
+
+**bun link を使用する場合**（推奨）：
+
+```json
+{
+  "mcpServers": {
+    "slack-mcp": {
+      "command": "slack-mcp",
+      "env": {
+        "SLACK_USER_TOKEN": "xoxb-your-token-here",
+        "SLACK_TEAM_ID": "T1234567890",
+        "SLACK_CHANNEL_IDS": "C1234567890,C0987654321"
+      }
+    }
+  }
+}
+```
+
+`bun link` でグローバルにリンクされている場合、`slack-mcp` コマンドが使用可能になります。
+
+**ローカルパスを使用する場合**：
 
 ```json
 {
@@ -255,4 +294,4 @@ ISC
 
 ---
 
-**注意**: このプロジェクトは `npm link` を使用したローカル開発環境での利用を想定しています。大多数への公開は想定していません。
+**注意**: このプロジェクトは `bun link` を使用したローカル開発環境での利用を想定しています。npm への公開は想定していません。

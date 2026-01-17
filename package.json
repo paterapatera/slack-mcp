@@ -1,7 +1,7 @@
 {
   "name": "slack-mcp",
   "version": "1.0.0",
-  "description": "slack mcp server",
+  "description": "Slack ワークスペース内のメッセージを検索する MCP (Model Context Protocol) サーバー",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
@@ -15,6 +15,19 @@
     "inspector": "npx @modelcontextprotocol/inspector bun dist/index.js"
   },
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paterapatera/slack-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "slack",
+    "slack-api",
+    "message-search",
+    "ai",
+    "claude"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@slack/bolt": "^4.6.0",
@@ -25,5 +38,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "engines": {
+    "bun": ">=1.2.21"
   }
 }
