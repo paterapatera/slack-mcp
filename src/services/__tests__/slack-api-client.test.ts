@@ -1,13 +1,5 @@
-import { test, expect, beforeEach, afterEach } from 'bun:test'
+import { test, expect, mock } from 'bun:test'
 import { SlackAPIClient } from '../slack-api-client'
-
-beforeEach(() => {
-  // テストごとにクリーンアップ
-})
-
-afterEach(() => {
-  // クリーンアップ
-})
 
 test('initialize() は有効なトークンで Bolt アプリを初期化する', () => {
   const client = new SlackAPIClient()
@@ -53,63 +45,22 @@ test('searchMessages() は app が初期化されていない場合、エラー�
   await expect(client.searchMessages({ query: 'test' })).rejects.toThrow()
 })
 
-test('searchMessages() は有効なオプションで API を呼び出す', async () => {
+test('searchMessages() は検証済みオプションを executeSearchWithRetry に委譲する', async () => {
   const client = new SlackAPIClient()
   const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
   client.initializeClient(token)
 
-  // searchMessages メソッドが存在することを確認
-  expect(typeof client.searchMessages).toBe('function')
-})
+  const fakeResponse = {
+    isSuccess: true,
+    query: 'q',
+    messages: { totalResultCount: 0, matches: [] },
+  }
 
-test('searchMessages() は query パラメータを必須とする', async () => {
-  const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
+  const execSpy = mock(async () => fakeResponse)
+    ; (client as any).executeSearchWithRetry = execSpy
 
-  // 空の query はエラーになる可能性があるが、API の動作に依存
-  // ここでは型チェックのみ
-  expect(() => {
-    client.searchMessages({ query: '' })
-  }).not.toThrow()
-})
+  const result = await client.searchMessages({ query: 'q', maxResultCount: 5 })
 
-test('searchMessages() はレート制限エラーを検出する', async () => {
-  const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
-
-  // レート制限エラーの検出ロジックをテスト
-  // 実際の API 呼び出しはモックが必要だが、ここでは検出メソッドの存在を確認
-  expect(client).toBeDefined()
-})
-
-test('searchMessages() は指数バックオフでリトライする', async () => {
-  const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
-
-  // リトライロジックの存在を確認
-  // 実際のリトライ動作は統合テストで検証
-  expect(client).toBeDefined()
-})
-
-test('searchMessages() は認証エラーを検出し、適切なエラーメッセージを生成する', async () => {
-  const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
-
-  // 認証エラーの検出ロジックをテスト
-  // 実際の API 呼び出しはモックが必要だが、ここでは検出メソッドの存在を確認
-  expect(client).toBeDefined()
-})
-
-test('searchMessages() は接続エラーを検出し、リトライを実行する', async () => {
-  const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
-
-  // 接続エラーの検出とリトライロジックをテスト
-  // 実際の接続エラーは統合テストで検証
-  expect(client).toBeDefined()
+  expect(execSpy.mock.calls).toEqual([[{ query: 'q', maxResultCount: 5 }]])
+  expect(result).toBe(fakeResponse)
 })

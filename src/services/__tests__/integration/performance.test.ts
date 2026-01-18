@@ -23,40 +23,19 @@ describe('パフォーマンステスト', () => {
     process.env = originalEnv
   })
 
-  describe('同時リクエストの処理のテスト', () => {
+  describe('起動パフォーマンス', () => {
     beforeEach(() => {
       process.env.SLACK_USER_TOKEN =
         'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
     })
 
-    it('複数のリクエストを並行して処理できる', async () => {
+    it('サーバー起動が 2 秒未満で完了する', async () => {
+      const start = performance.now()
+
       await server.startServer()
 
-      // ツールハンドラーが async 関数であるため、複数のリクエストは並行処理される
-      // 実際の並行処理のテストは統合テストで行う
-      expect(server.server).toBeDefined()
-    })
-
-    it('非同期処理により、複数の検索リクエストを並行して処理する', async () => {
-      await server.startServer()
-
-      // 非同期処理により、複数の検索リクエストを並行して処理できることを確認
-      expect(server.server).toBeDefined()
-    })
-  })
-
-  describe('レート制限対応のテスト', () => {
-    beforeEach(() => {
-      process.env.SLACK_USER_TOKEN =
-        'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-    })
-
-    it('レート制限エラー時に適切にリトライする', async () => {
-      await server.startServer()
-
-      // レート制限エラー時のリトライロジックを確認
-      // 実際のレート制限エラーは統合テストで行う
-      expect(server.server).toBeDefined()
+      const elapsedMs = performance.now() - start
+      expect(elapsedMs).toBeLessThan(2000)
     })
   })
 })

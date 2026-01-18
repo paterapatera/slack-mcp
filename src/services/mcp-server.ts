@@ -1,7 +1,7 @@
 import { McpServer as SDKMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { Implementation } from '@modelcontextprotocol/sdk/types.js'
-import { ConfigService, ConfigError } from './config-service.js'
+import { ConfigService, ConfigError, IConfigService, Config } from './config-service.js'
 import { SlackAPIClient } from './slack-api-client.js'
 import { SearchService, SearchOptions, SearchResult } from './search-service.js'
 import { LoggingService } from './logging-service.js'
@@ -21,7 +21,9 @@ export class McpServer {
   /** 検索サービス */
   private searchService: SearchService | null
   /** 設定情報 */
-  private config: ReturnType<typeof ConfigService.loadConfig> | null
+  private config: Config | null
+  /** 設定サービス（注入可能） */
+  private configService: IConfigService
   /** ログ記録サービス */
   private loggingService: LoggingService
 
@@ -43,13 +45,14 @@ export class McpServer {
    * MCP サーバーを初期化する
    * @param serverInfo サーバー情報（名前、バージョンなど）
    */
-  constructor(serverInfo: Implementation) {
+  constructor(serverInfo: Implementation, configService?: IConfigService) {
     this.sdkServer = new SDKMcpServer(serverInfo)
     this.loggingService = new LoggingService()
     this.slackClient = new SlackAPIClient(this.loggingService)
     this.transportInstance = null
     this.searchService = null
     this.config = null
+    this.configService = configService ?? new ConfigService()
   }
 
   /**
@@ -81,16 +84,16 @@ export class McpServer {
   /**
    * 設定を読み込み検証する
    */
-  private loadAndValidateConfig(): ReturnType<typeof ConfigService.loadConfig> {
-    const slackConfig = ConfigService.loadConfig()
-    ConfigService.validateConfig(slackConfig)
+  private loadAndValidateConfig(): Config {
+    const slackConfig = this.configService.loadConfig()
+    this.configService.validateConfig(slackConfig)
     return slackConfig
   }
 
   /**
    * サービスを初期化する
    */
-  private initializeServices(config: ReturnType<typeof ConfigService.loadConfig>): void {
+  private initializeServices(config: Config): void {
     this.config = config
     this.slackClient.initializeClient(config.slackUserToken)
     this.searchService = new SearchService(this.slackClient, this.loggingService)
@@ -142,7 +145,7 @@ export class McpServer {
    */
   private createSearchMessagesTool(
     searchService: SearchService,
-    config: ReturnType<typeof ConfigService.loadConfig>,
+    config: Config,
     loggingService: LoggingService
   ): void {
     const inputSchema = this.createSearchToolSchema()
@@ -190,7 +193,7 @@ export class McpServer {
   private async executeSearchToolHandler(
     args: unknown,
     searchService: SearchService,
-    config: ReturnType<typeof ConfigService.loadConfig>,
+    config: Config,
     loggingService: LoggingService
   ): Promise<{ messages: any[]; total: number; hasMore: boolean }> {
     try {

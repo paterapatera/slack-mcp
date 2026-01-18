@@ -41,25 +41,4 @@
  *    - 認証エラー時に適切なエラーメッセージが表示される
  */
 
-import { describe, it, expect } from 'bun:test'
-
-describe('MCP Inspector を使用した E2E テスト', () => {
-  it('MCP Inspector でサーバーの動作を検証する', () => {
-    // MCP Inspector は手動で実行するツールのため、
-    // ここではテストの存在を確認するのみ
-    expect(true).toBe(true)
-  })
-
-  it('MCP クライアントからの検索リクエストのテスト', () => {
-    // MCP Inspector を使用して手動でテストを実行
-    // テスト手順はファイル上部のコメントを参照
-    expect(true).toBe(true)
-  })
-
-  it('実際の Slack API を使用した検索テスト', () => {
-    // 実際の Slack API を使用した検索テストは、
-    // MCP Inspector を使用して手動で実行
-    // テスト用トークンを使用すること
-    expect(true).toBe(true)
-  })
-})
+// 自動化不可のため、このファイルは手動手順のみを文書化する

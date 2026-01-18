@@ -132,3 +132,15 @@ test('validateConfig() は SLACK_CHANNEL_IDS が有効な形式の場合、エ�
 
   expect(() => ConfigService.validateConfig(config)).not.toThrow()
 })
+
+// インスタンス API のテスト
+import { IConfigService } from '../config-service'
+
+test('ConfigService のインスタンス API が static と同等に動作する', () => {
+  process.env.SLACK_USER_TOKEN = 'xoxb-test-token'
+  const instance = new ConfigService()
+  const config = instance.loadConfig()
+
+  expect(config.slackUserToken).toBe('xoxb-test-token')
+  expect(() => instance.validateConfig(config)).not.toThrow()
+})

@@ -1,13 +1,21 @@
-import { test, expect, beforeEach } from 'bun:test'
+import { test, expect, mock } from 'bun:test'
 import { SlackAPIClient } from '../slack-api-client'
 
-test('channelName() はチャンネルIDからチャンネル名を取得する', async () => {
+test('channelName() は conversations.info の応答からチャンネル名を返す', async () => {
   const client = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  client.initializeClient(token)
+  const infoSpy = mock(async () => ({ ok: true, channel: { name: 'general' } }))
+    ; (client as any).app = {
+      client: {
+        conversations: {
+          info: infoSpy,
+        },
+      },
+    }
 
-  // メソッドが存在することを確認
-  expect(typeof client.channelName).toBe('function')
+  const name = await client.channelName('C1234567890')
+
+  expect(name).toBe('general')
+  expect(infoSpy).toHaveBeenCalledWith({ channel: 'C1234567890' })
 })
 
 test('channelName() は app が初期化されていない場合、エラーを throw する', async () => {

@@ -1,148 +1,141 @@
-import { test, expect } from 'bun:test'
+import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
+import { LoggingService } from '../logging-service'
 import { SearchService } from '../search-service'
-import { SlackAPIClient } from '../slack-api-client'
+import { SlackAPIClient, SlackSearchOptions, SlackSearchResponse } from '../slack-api-client'
 
-test('searchMessages() は有効なクエリで検索を実行する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+class StubSlackClient extends SlackAPIClient {
+  public calls: SlackSearchOptions[] = []
+  public lookedUpChannelIds: string[] = []
 
-  const searchService = new SearchService(slackClient)
+  constructor(private response: SlackSearchResponse) {
+    super(new LoggingService())
+  }
 
-  // 実際の API 呼び出しは統合テストで行う
-  // ここではメソッドの存在を確認
-  expect(typeof searchService.searchMessages).toBe('function')
-})
+  async searchMessages(options: SlackSearchOptions): Promise<SlackSearchResponse> {
+    this.calls.push(options)
+    return this.response
+  }
 
-test('searchMessages() は空のクエリでエラーを throw する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  async channelName(channelId: string): Promise<string> {
+    this.lookedUpChannelIds.push(channelId)
+    return `channel-${channelId}`
+  }
+}
 
-  const searchService = new SearchService(slackClient)
+const emptyResponse: SlackSearchResponse = {
+  isSuccess: true,
+  query: '',
+  messages: {
+    totalResultCount: 0,
+    matches: [],
+    paging: {
+      count: 0,
+      totalResultCount: 0,
+      pageNumber: 1,
+      totalPageCount: 1,
+    },
+  },
+}
 
-  await expect(searchService.searchMessages({ query: '' })).rejects.toThrow()
+describe('SearchService', () => {
+  let errorSpy: any
+  let originalConsoleError: typeof console.error
 
-  await expect(searchService.searchMessages({ query: '   ' })).rejects.toThrow()
-})
+  beforeEach(() => {
+    originalConsoleError = console.error
+    errorSpy = spyOn(console, 'error')
+  })
 
-test('searchMessages() は Slack API Client を呼び出す', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  afterEach(() => {
+    if (errorSpy && typeof errorSpy.restore === 'function') {
+      errorSpy.restore()
+    } else {
+      console.error = originalConsoleError
+    }
+  })
 
-  const searchService = new SearchService(slackClient)
+  it('空のクエリでエラーを返す', async () => {
+    const slackClient = new StubSlackClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  // メソッドが存在することを確認
-  expect(searchService).toBeDefined()
-  expect(typeof searchService.searchMessages).toBe('function')
-})
+    await expect(service.searchMessages({ query: '' })).rejects.toThrow(/検索クエリが空/)
+    await expect(service.searchMessages({ query: '   ' })).rejects.toThrow(/検索クエリが空/)
+  })
 
-test('searchMessages() は channelIds が指定されていない場合、全チャンネルで検索する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  it('channelIds 未指定の場合はベースクエリをそのまま Slack API に渡す', async () => {
+    const slackClient = new StubSlackClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  const searchService = new SearchService(slackClient)
+    const result = await service.searchMessages({ query: 'hello world' })
 
-  // channelIds が未指定の場合、クエリに in: が追加されないことを確認
-  // 実際の動作は統合テストで検証
-  expect(searchService).toBeDefined()
-})
+    expect(slackClient.calls).toHaveLength(1)
+    expect(slackClient.calls[0].query).toBe('hello world')
+    expect(slackClient.calls[0].query.includes('in:')).toBe(false)
+    expect(result.totalResultCount).toBe(0)
+  })
 
-test('searchMessages() は channelIds が指定されている場合、指定されたチャンネルで検索する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  it('channelIds 指定時はチャンネル名を解決して in: 句を付与する', async () => {
+    const slackClient = new StubSlackClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  const searchService = new SearchService(slackClient)
+    await service.searchMessages({ query: 'error budget', channelIds: ['C123', 'C999'] })
 
-  // channelIds が指定されている場合、クエリに in:channel_id が追加されることを確認
-  // 実際の動作は統合テストで検証
-  expect(searchService).toBeDefined()
-})
+    expect(slackClient.lookedUpChannelIds).toEqual(['C123', 'C999'])
+    const queries = slackClient.calls.map((c) => c.query)
+    expect(queries).toContain('error budget in:channel-C123')
+    expect(queries).toContain('error budget in:channel-C999')
+  })
 
-test('searchMessages() は複数の channelIds が指定されている場合、すべてのチャンネルで検索する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  it('teamId を検索オプションに含めて Slack API に伝搬する', async () => {
+    const slackClient = new StubSlackClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  const searchService = new SearchService(slackClient)
+    await service.searchMessages({ query: 'hello', teamId: 'T111', channelIds: ['C1'] })
 
-  // 複数の channelIds が指定されている場合の処理を確認
-  // 実際の動作は統合テストで検証
-  expect(searchService).toBeDefined()
-})
+    expect(slackClient.calls[0].teamId).toBe('T111')
+  })
 
-test('searchMessages() は無効なチャンネルIDでエラーを throw する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+  it('無効なチャンネルIDでは例外を投げ、ログを残す', async () => {
+    const slackClient = new StubSlackClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  const searchService = new SearchService(slackClient)
+    await expect(service.searchMessages({ query: 'oops', channelIds: [''] })).rejects.toThrow(
+      /無効なチャンネルID/
+    )
+    expect(
+      errorSpy.mock.calls.some(
+        (call) => typeof call[0] === 'string' && call[0].includes('無効なチャンネルIDが検出')
+      )
+    ).toBe(true)
+  })
 
-  // 無効なチャンネルIDが指定された場合、エラーを throw することを確認
-  // 実際の API エラーは統合テストで検証
-  expect(searchService).toBeDefined()
-})
+  it('チャンネル名の取得が一部失敗した場合は成功分のみで検索を実行する', async () => {
+    class PartialFailClient extends StubSlackClient {
+      constructor(response: SlackSearchResponse) {
+        super(response)
+      }
 
-test('searchMessages() は teamId が指定されている場合、検索オプションに含める', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
+      async channelName(channelId: string): Promise<string> {
+        if (channelId === 'C123') {
+          throw new Error('channel not found')
+        }
+        return `channel-${channelId}`
+      }
+    }
 
-  const searchService = new SearchService(slackClient)
+    const slackClient = new PartialFailClient(emptyResponse)
+    const service = new SearchService(slackClient)
 
-  // teamId が指定されている場合、検索オプションに含まれることを確認
-  // 実際の API 呼び出しは統合テストで検証
-  expect(searchService).toBeDefined()
-})
+    const result = await service.searchMessages({ query: 'partial', channelIds: ['C123', 'C999'] })
 
-test('searchMessages() は teamId が未指定の場合、検索オプションに含めない', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
-
-  const searchService = new SearchService(slackClient)
-
-  // teamId が未指定の場合、検索オプションに含まれないことを確認
-  // 実際の API 呼び出しは統合テストで検証
-  expect(searchService).toBeDefined()
-})
-
-test('searchMessages() はタイムスタンプを ISO 8601 形式に変換する', () => {
-  // タイムスタンプ変換のユニットテスト
-  // Slack タイムスタンプ "1508284197.000015" を ISO 8601 形式に変換
-  const slackTs = '1508284197.000015'
-  const date = new Date(parseFloat(slackTs) * 1000)
-  const iso8601 = date.toISOString()
-
-  // ISO 8601 形式であることを確認（YYYY-MM-DDTHH:mm:ss.sssZ 形式）
-  expect(iso8601).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
-  // 実際の変換結果を確認（UTC で正しく変換される）
-  expect(iso8601).toBe('2017-10-17T23:49:57.000Z')
-})
-
-test('searchMessages() は空の結果セットを適切な形式で返却する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
-
-  const searchService = new SearchService(slackClient)
-
-  // 空の結果セットの処理を確認
-  // 実際の動作は統合テストで検証
-  expect(searchService).toBeDefined()
-})
-
-test('searchMessages() はメッセージ内容、タイムスタンプ、チャンネル情報、ユーザー情報を含む構造化された形式で返却する', async () => {
-  const slackClient = new SlackAPIClient()
-  const token = 'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
-  slackClient.initializeClient(token)
-
-  const searchService = new SearchService(slackClient)
-
-  // 構造化された形式での返却を確認
-  // 実際の動作は統合テストで検証
-  expect(searchService).toBeDefined()
+    // C123 の失敗はログに残るが、C999 に対してのみ searchMessages が呼ばれる
+    expect(slackClient.calls.map((c) => c.query)).toContain('partial in:channel-C999')
+    expect(slackClient.calls).toHaveLength(1)
+    // エラーログが出力されていること
+    expect(
+      errorSpy.mock.calls.some(
+        (call) => typeof call[0] === 'string' && call[0].includes('チャンネル名の取得に失敗しました')
+      )
+    ).toBe(true)
+  })
 })

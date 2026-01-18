@@ -118,7 +118,9 @@ export interface SlackSearchResponse {
  * Slack API クライアント
  * Slack API への接続とメッセージ検索機能を提供
  */
-export class SlackAPIClient {
+import type { ISlackClient } from './slack-client-adapter.js'
+
+export class SlackAPIClient implements ISlackClient {
   /** @slack/bolt の App インスタンス */
   private app: App | null = null
   /** 最大リトライ回数

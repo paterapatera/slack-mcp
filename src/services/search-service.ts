@@ -1,4 +1,5 @@
-import { SlackAPIClient, SlackSearchOptions, SlackSearchResponse } from './slack-api-client'
+import { SlackSearchOptions, SlackSearchResponse } from './slack-api-client'
+import { ISlackClient } from './slack-client-adapter.js'
 import { LoggingService } from './logging-service.js'
 
 /**
@@ -73,7 +74,7 @@ export class SearchService {
 
   constructor(
     /** Slack API クライアント */
-    private slackClient: SlackAPIClient,
+    private slackClient: ISlackClient,
     /** ログ記録サービス（オプション） */
     private loggingService: LoggingService = new LoggingService()
   ) {}
@@ -124,26 +125,34 @@ export class SearchService {
    * @throws {Error} チャンネル名の取得に失敗した場合（チャンネルIDが無効、アクセス権限がないなど）
    */
   private async channelNames(channelIds: string[]): Promise<string[]> {
-    // Promise.all を使用して、複数のチャンネルIDからチャンネル名を並列取得する
-    // いずれかのチャンネル名の取得に失敗した場合、全体が失敗する（Fast-fail 戦略）
-    const channelNames = await Promise.all(
+    // 個別の取得失敗を許容して成功分のみを返す（部分失敗許容）
+    // Promise.allSettled を使用して各取得の結果を集計する
+    const results = await Promise.allSettled(
       channelIds.map(async (channelId) => {
-        try {
-          return await this.slackClient.channelName(channelId)
-        } catch (error: unknown) {
-          // catch ブロックで捕捉されるエラーは unknown 型
-          // コンストラクタで loggingService が未指定の場合でも
-          // 新しい LoggingService インスタンスが設定されるため、
-          // ここでは常に非nullであることが保証されている
-          // 非nullアサーション演算子を使用して TypeScript の型チェックを回避
-          this.loggingService!.logError(error, `チャンネル名の取得に失敗しました: ${channelId}`)
-          throw new Error(
-            `エラー: チャンネルID "${channelId}" のチャンネル名を取得できませんでした。\nチャンネルIDが正しいか、アクセス権限があるか確認してください。`
-          )
-        }
+        return this.slackClient.channelName(channelId)
       })
     )
-    return channelNames
+
+    const successfulNames: string[] = []
+    const failedChannelIds: string[] = []
+
+    results.forEach((r, index) => {
+      if (r.status === 'fulfilled') {
+        successfulNames.push(r.value)
+      } else {
+        const failedId = channelIds[index]
+        failedChannelIds.push(failedId)
+        // ログに詳細を残す（観測性確保）
+        this.loggingService!.logError(r.reason, `チャンネル名の取得に失敗しました: ${failedId}`)
+      }
+    })
+
+    // 全て失敗した場合は空配列を返して全チャンネル検索へフォールバック
+    if (successfulNames.length === 0) {
+      return []
+    }
+
+    return successfulNames
   }
 
   /**
