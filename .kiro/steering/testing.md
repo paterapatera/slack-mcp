@@ -25,8 +25,8 @@ src/services/
    - `search-service.test.ts`
    - `mcp-server.test.ts`
    - `logging-service.test.ts`
-   - `metrics-service.test.ts`  # 成功/失敗の記録と成功率計算の検証
-   - `slack-client-adapter.test.ts`  # アダプタが underlying client に正しく委譲することを検証
+   - `metrics-service.test.ts` # 成功/失敗の記録と成功率計算の検証
+   - `slack-client-adapter.test.ts` # アダプタが underlying client に正しく委譲することを検証
 
 2. **統合テスト**: 複数のサービスを組み合わせた動作をテスト
    - `integration/startup-flow.test.ts`: 起動フロー
@@ -47,13 +47,13 @@ src/services/
 ### テストスイートとケース
 
 ```typescript
-describe("サービス名", () => {
-  describe("機能グループ", () => {
-    it("期待される動作を説明する", () => {
+describe('サービス名', () => {
+  describe('機能グループ', () => {
+    it('期待される動作を説明する', () => {
       // テストコード
-    });
-  });
-});
+    })
+  })
+})
 ```
 
 ## テストパターン
@@ -63,16 +63,16 @@ describe("サービス名", () => {
 テストごとに環境変数をリセット：
 
 ```typescript
-const originalEnv = process.env;
+const originalEnv = process.env
 
 beforeEach(() => {
-  process.env = { ...originalEnv };
+  process.env = { ...originalEnv }
   // テスト用の環境変数を設定
-});
+})
 
 afterEach(() => {
-  process.env = originalEnv;
-});
+  process.env = originalEnv
+})
 ```
 
 ### 非同期処理のテスト
@@ -80,9 +80,9 @@ afterEach(() => {
 `async/await` と `expect().rejects.toThrow()` を使用：
 
 ```typescript
-it("エラー時に適切なエラーを throw する", async () => {
-  await expect(service.method()).rejects.toThrow(/エラーメッセージ/);
-});
+it('エラー時に適切なエラーを throw する', async () => {
+  await expect(service.method()).rejects.toThrow(/エラーメッセージ/)
+})
 ```
 
 ### サービスの初期化
@@ -91,10 +91,10 @@ it("エラー時に適切なエラーを throw する", async () => {
 
 ```typescript
 beforeEach(() => {
-  loggingService = new LoggingService();
-  slackClient = new SlackAPIClient(loggingService);
-  searchService = new SearchService(slackClient, loggingService);
-});
+  loggingService = new LoggingService()
+  slackClient = new SlackAPIClient(loggingService)
+  searchService = new SearchService(slackClient, loggingService)
+})
 ```
 
 ## テスト実行
@@ -157,14 +157,14 @@ MCP Inspector を使用した E2E テストは手動で実行：
 テスト用のトークン形式：
 
 ```typescript
-"xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx"
+'xoxb-test-token-1234567890-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx'
 ```
 
 ### テストチャンネルID
 
 ```typescript
-"C1234567890"
-"C0987654321"
+'C1234567890'
+'C0987654321'
 ```
 
 実際の API 呼び出しは統合テストで行い、ユニットテストではインターフェースの整合性を確認します。

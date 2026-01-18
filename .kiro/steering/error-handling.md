@@ -38,16 +38,16 @@
 
 ```typescript
 // 一般的なエラー
-loggingService.logError(error, "コンテキスト情報");
+loggingService.logError(error, 'コンテキスト情報')
 
 // 認証エラー
-loggingService.logAuthenticationError(error, "Slack API 認証");
+loggingService.logAuthenticationError(error, 'Slack API 認証')
 
 // API エラー
-loggingService.logAPIError(error, "Slack API 接続");
+loggingService.logAPIError(error, 'Slack API 接続')
 
 // レート制限エラー
-loggingService.logRateLimitError(error, "Slack API 呼び出し", retryAttempt);
+loggingService.logRateLimitError(error, 'Slack API 呼び出し', retryAttempt)
 ```
 
 ### ログ出力の原則
@@ -73,13 +73,13 @@ loggingService.logRateLimitError(error, "Slack API 呼び出し", retryAttempt);
 ```typescript
 // 認証エラー: リトライせず即座に throw
 if (isAuthError(error)) {
-  throw authError;
+  throw authError
 }
 
 // 接続エラー: リトライ可能
 if (isConnectionError(error) && attempt < maxRetries) {
-  await waitWithExponentialBackoff(attempt);
-  continue;
+  await waitWithExponentialBackoff(attempt)
+  continue
 }
 ```
 
@@ -111,7 +111,7 @@ MCP ツールハンドラー内でエラーをキャッチ：
 すべてのエラーメッセージは日本語で記述：
 
 ```typescript
-`エラー: Slack API の認証に失敗しました。\nトークンが有効で、必要なスコープが付与されていることを確認してください。\nエラー詳細: ${error.message}`
+;`エラー: Slack API の認証に失敗しました。\nトークンが有効で、必要なスコープが付与されていることを確認してください。\nエラー詳細: ${error.message}`
 ```
 
 ### メッセージ構造
