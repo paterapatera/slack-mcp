@@ -46,37 +46,37 @@
 ### 基本的な使用例（カテゴリ1のすべてのチェック項目をレビュー）
 
 ```
-/review/test 1
+/review-test 1
 ```
 
 ### 特定のチェック項目をレビュー（1.7のみ）
 
 ```
-/review/test 1.7
+/review-test 1.7
 ```
 
 ### ディレクトリを指定してレビュー
 
 ```
-/review/test 2 tests/unit
+/review-test 2 tests/unit
 ```
 
 ### git差分があるファイルのみをレビュー（カテゴリ2のチェック項目）
 
 ```
-/review/test 2 diff
+/review-test 2 diff
 ```
 
 ### 特定のチェック項目とgit差分チェックフラグの組み合わせ
 
 ```
-/review/test 3.5 diff
+/review-test 3.5 diff
 ```
 
 ### ディレクトリ指定とgit差分チェックフラグの組み合わせ（diffフラグが優先される）
 
 ```
-/review/test 4 diff
+/review-test 4 diff
 ```
 
 ## チェックリスト

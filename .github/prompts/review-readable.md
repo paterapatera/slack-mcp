@@ -45,37 +45,37 @@
 ### 基本的な使用例（カテゴリ1のすべてのチェック項目をレビュー）
 
 ```
-/review/readable 1
+/review-readable 1
 ```
 
 ### 特定のチェック項目をレビュー（1.7のみ）
 
 ```
-/review/readable 1.7
+/review-readable 1.7
 ```
 
 ### ディレクトリを指定してレビュー
 
 ```
-/review/readable 2 src/components
+/review-readable 2 src/components
 ```
 
 ### git差分があるファイルのみをレビュー（カテゴリ2のチェック項目）
 
 ```
-/review/readable 2 diff
+/review-readable 2 diff
 ```
 
 ### 特定のチェック項目とgit差分チェックフラグの組み合わせ
 
 ```
-/review/readable 3.5 diff
+/review-readable 3.5 diff
 ```
 
 ### ディレクトリ指定とgit差分チェックフラグの組み合わせ（diffフラグが優先される）
 
 ```
-/review/readable 4 diff
+/review-readable 4 diff
 ```
 
 ## チェックリスト

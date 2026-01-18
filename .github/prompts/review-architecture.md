@@ -75,31 +75,31 @@
 ### 基本的な使用例（全原則を評価）
 
 ```
-/review/architecture
+/review-architecture
 ```
 
 ### 特定の原則を評価（CCPのみ）
 
 ```
-/review/architecture CCP
+/review-architecture CCP
 ```
 
 ### ディレクトリを指定してレビュー
 
 ```
-/review/architecture all src/components
+/review-architecture all src/components
 ```
 
 ### git差分があるファイルのみをレビュー
 
 ```
-/review/architecture diff
+/review-architecture diff
 ```
 
 ### 特定の原則とgit差分チェックフラグの組み合わせ
 
 ```
-/review/architecture REP diff
+/review-architecture REP diff
 ```
 
 ## 評価原則
