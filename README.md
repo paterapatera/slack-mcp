@@ -19,7 +19,20 @@ Slack ワークスペース内のメッセージを検索する MCP (Model Conte
 
 - [Bun](https://bun.sh) v1.2.21 以降
 - 有効な Slack User Token (`xoxb-` または `xoxp-` で始まる)
-- Slack API の `search:read` スコープ
+
+### Slack User Token の必要な権限
+
+以下の権限を持つ Slack User Token が必要です：
+
+- `channels:history`: ユーザーの公開チャンネル内のメッセージとコンテンツを表示
+- `channels:read`: ワークスペース内の公開チャンネルの基本情報を表示
+- `groups:history`: ユーザーのプライベートチャンネル内のメッセージとコンテンツを表示
+- `groups:read`: ユーザーのプライベートチャンネルの基本情報を表示
+- `im:history`: ユーザーのダイレクトメッセージ内のメッセージとコンテンツを表示
+- `im:read`: ユーザーのダイレクトメッセージの基本情報を表示
+- `mpim:history`: ユーザーのグループダイレクトメッセージ内のメッセージとコンテンツを表示
+- `mpim:read`: ユーザーのグループダイレクトメッセージの基本情報を表示
+- `search:read`: ワークスペースのコンテンツを検索
 
 ## セットアップ
 
