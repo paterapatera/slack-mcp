@@ -49,3 +49,17 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 - Load entire `.kiro/steering/` as project memory
 - Default files: `product.md`, `tech.md`, `structure.md`
 - Custom files are supported (managed via `/kiro/steering-custom`)
+
+## Lint / 型チェック（開発時の推奨手順） ✅
+
+実装後は必ず以下のチェックを実行してください:
+
+- フォーマットチェック（Prettier）
+  - 実行: `bun run format:check`
+  - 自動整形: `bun run format`
+- 型チェック（TypeScript）
+  - 実行: `npx tsc --noEmit`
+- テスト（自動回帰）
+  - 実行: `bun test`
+
+これらを CI に組み込むことで、フォーマットや型の不整合を早期に検出できます。
