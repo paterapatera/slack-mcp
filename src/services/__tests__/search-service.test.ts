@@ -113,7 +113,7 @@ describe('SearchService', () => {
             text: 'reply in thread',
             ts: '1610000000.000100',
             thread_ts: '1609999999.000000',
-            permalink: 'https://example',
+            permalink: 'https://example.slack.com/archives/C1/p1610000000000100',
             score: 0.5,
           },
         ],
@@ -133,6 +133,10 @@ describe('SearchService', () => {
     expect(result.messages).toHaveLength(1);
     // permalink に thread_ts パラメータがないため、undefined になる
     expect(result.messages[0]!.threadTs).toBeUndefined();
+    // permalink が正しく設定されること
+    expect(result.messages[0]!.permalink).toBe(
+      'https://example.slack.com/archives/C1/p1610000000000100'
+    );
   });
 
   it('親メッセージに reply_count がある場合も permalink に thread_ts パラメータがない場合は undefined になる', async () => {
@@ -150,7 +154,7 @@ describe('SearchService', () => {
             text: 'parent with replies',
             ts: '1609999999.000000',
             reply_count: 3,
-            permalink: 'https://example',
+            permalink: 'https://example.slack.com/archives/C1/p1609999999000000',
             score: 1.0,
           },
         ],
@@ -169,6 +173,10 @@ describe('SearchService', () => {
     const result = await service.searchMessages({ query: 'q' });
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]!.threadTs).toBeUndefined();
+    // permalink が正しく設定されること
+    expect(result.messages[0]!.permalink).toBe(
+      'https://example.slack.com/archives/C1/p1609999999000000'
+    );
   });
 
   it('thread_ts が無く reply_count も無い場合、permalink に thread_ts パラメータがない場合は undefined になる', async () => {
@@ -185,7 +193,7 @@ describe('SearchService', () => {
             username: 'user',
             text: 'no thread info',
             ts: '1611111111.111111',
-            permalink: 'https://example',
+            permalink: 'https://example.slack.com/archives/C1/p1611111111111111',
             score: 2.0,
           },
         ],
@@ -204,6 +212,10 @@ describe('SearchService', () => {
     const result = await service.searchMessages({ query: 'q' });
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]!.threadTs).toBeUndefined();
+    // permalink が正しく設定されること
+    expect(result.messages[0]!.permalink).toBe(
+      'https://example.slack.com/archives/C1/p1611111111111111'
+    );
   });
 
   it('無効なチャンネルIDでは例外を投げ、ログを残す', async () => {

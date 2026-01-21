@@ -45,6 +45,8 @@ export interface Message {
   threadTs?: string;
   /** 検索関連度スコア（オプション） */
   score?: number;
+  /** パーマネントリンク（メッセージへの永続的なURL） */
+  permalink?: string;
 }
 
 /**
@@ -724,6 +726,8 @@ export class SearchService {
       score: match.score,
       // permalink から thread_ts を抽出して設定
       threadTs: this.extractThreadTsFromPermalink(match.permalink),
+      // パーマネントリンクをそのまま設定
+      permalink: match.permalink,
     }));
   }
 
