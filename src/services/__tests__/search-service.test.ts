@@ -82,11 +82,12 @@ describe('SearchService', () => {
     // Act
     await service.searchMessages({ query: 'error budget', channelIds: ['C123', 'C999'] });
 
-    // Assert
+    // Assert: 複数チャンネルは 1 回の API 呼び出しで in:#ch1 in:#ch2 形式になる
     expect(slackClient.lookedUpChannelIds).toEqual(['C123', 'C999']);
-    const queries = slackClient.calls.map((c) => c.query);
-    expect(queries).toContain('error budget in:channel-C123');
-    expect(queries).toContain('error budget in:channel-C999');
+    expect(slackClient.calls).toHaveLength(1);
+    expect((slackClient.calls[0] as any).query).toBe(
+      'error budget in:#channel-C123 in:#channel-C999'
+    );
   });
 
   it('teamId を検索オプションに含めて Slack API に伝搬する', async () => {
@@ -251,9 +252,9 @@ describe('SearchService', () => {
 
     const result = await service.searchMessages({ query: 'partial', channelIds: ['C123', 'C999'] });
 
-    // C123 の失敗はログに残るが、C999 に対してのみ searchMessages が呼ばれる
-    expect(slackClient.calls.map((c) => c.query)).toContain('partial in:channel-C999');
+    // C123 の失敗はログに残るが、成功した C999 のみで 1 回 searchMessages が呼ばれる
     expect(slackClient.calls).toHaveLength(1);
+    expect((slackClient.calls[0] as any).query).toBe('partial in:#channel-C999');
     // エラーログが出力されていること
     expect(
       errorSpy.mock.calls.some(
