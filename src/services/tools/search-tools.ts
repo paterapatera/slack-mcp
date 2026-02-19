@@ -67,7 +67,7 @@ export function registerSearchTools(
   sdkServer.registerTool(
     'get_thread_replies',
     {
-      description: 'スレッドの返信を取得します',
+      description: 'スレッドの返信または特定のtsのメッセージを取得します',
       inputSchema: getThreadSchema,
     },
     async (args) => {
